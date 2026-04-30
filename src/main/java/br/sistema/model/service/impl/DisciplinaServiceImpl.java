@@ -2,10 +2,11 @@ package br.sistema.model.service.impl;
 
 import br.sistema.model.entity.Disciplina;
 import br.sistema.model.repository.impl.DisciplinaRepositoryImpl;
+import br.sistema.model.service.interfaces.DisciplinaService;
 
 import java.util.List;
 
-public class DisciplinaServiceImpl {
+public class DisciplinaServiceImpl implements DisciplinaService {
 
     private final DisciplinaRepositoryImpl disciplinaRepositoryImpl;
 

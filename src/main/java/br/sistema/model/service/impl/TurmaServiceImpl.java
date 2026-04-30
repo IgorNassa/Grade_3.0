@@ -2,9 +2,11 @@ package br.sistema.model.service.impl;
 
 import br.sistema.model.entity.Turma;
 import br.sistema.model.repository.impl.TurmaRepositoryImpl;
+import br.sistema.model.service.interfaces.TurmaService;
+
 import java.util.List;
 
-public class TurmaServiceImpl {
+public class TurmaServiceImpl implements TurmaService {
 
     private final TurmaRepositoryImpl turmaRepositoryImpl;
 

@@ -1,9 +1,15 @@
 package br.sistema;
 import br.sistema.config.database.JPAConfig;
-
+import br.sistema.model.service.impl.*;
+import br.sistema.model.service.interfaces.*;
 import br.sistema.view.MenuPrincipal;
 import jakarta.persistence.EntityManager;
 import org.flywaydb.core.Flyway;
+import br.sistema.model.repository.impl.DisciplinaRepositoryImpl;
+import br.sistema.model.repository.impl.ProfessorRepositoryImpl;
+import br.sistema.model.repository.impl.TurnoRepositoryImpl;
+import br.sistema.model.repository.impl.TurmaRepositoryImpl;
+import br.sistema.model.repository.impl.AulaRepositoryImpl;
 
 public class Main {
     public static void main(String[] args) {
@@ -43,17 +49,17 @@ public class Main {
         }
 
         try {
-            DisciplinaRepository disciplinaRepo = new DisciplinaRepository(em);
-            ProfessorRepository professorRepo = new ProfessorRepository(em);
-            TurnoRepository turnoRepo = new TurnoRepository(em);
-            TurmaRepository turmaRepo = new TurmaRepository(em);
-            AulaRepository aulaRepo = new AulaRepository(em);
+            DisciplinaRepositoryImpl disciplinaRepo = new DisciplinaRepositoryImpl(em);
+            ProfessorRepositoryImpl professorRepo = new ProfessorRepositoryImpl(em);
+            TurnoRepositoryImpl turnoRepo = new TurnoRepositoryImpl(em);
+            TurmaRepositoryImpl turmaRepo = new TurmaRepositoryImpl(em);
+            AulaRepositoryImpl aulaRepo = new AulaRepositoryImpl(em);
 
-            DisciplinaService disciplinaService = new DisciplinaService(disciplinaRepo);
-            ProfessorService professorService = new ProfessorService(professorRepo);
-            TurnoService turnoService = new TurnoService(turnoRepo);
-            TurmaService turmaService = new TurmaService(turmaRepo);
-            AulaService aulaService = new AulaService(aulaRepo, em);
+            DisciplinaService disciplinaService = new DisciplinaServiceImpl(disciplinaRepo);
+            ProfessorService professorService = new ProfessorServiceImpl(professorRepo);
+            TurnoService turnoService = new TurnoServiceImpl(turnoRepo);
+            TurmaService turmaService = new TurmaServiceImpl(turmaRepo);
+            AulaService aulaService = new AulaServiceImpl(aulaRepo, em);
 
             System.out.println("Iniciando a interface do usuário...");
 

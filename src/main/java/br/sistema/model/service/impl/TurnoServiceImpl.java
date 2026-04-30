@@ -2,9 +2,11 @@ package br.sistema.model.service.impl;
 
 import br.sistema.model.entity.Turno;
 import br.sistema.model.repository.impl.TurnoRepositoryImpl;
+import br.sistema.model.service.interfaces.TurnoService;
+
 import java.util.List;
 
-public class TurnoServiceImpl {
+public class TurnoServiceImpl implements TurnoService {
 
     private final TurnoRepositoryImpl turnoRepositoryImpl;
 
@@ -12,6 +14,7 @@ public class TurnoServiceImpl {
         this.turnoRepositoryImpl = turnoRepositoryImpl;
     }
 
+    @Override
     public void save(Turno turno) {
         try {
             validarTurno(turno);

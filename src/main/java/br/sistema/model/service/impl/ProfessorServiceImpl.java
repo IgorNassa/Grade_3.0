@@ -2,9 +2,11 @@ package br.sistema.model.service.impl;
 
 import br.sistema.model.entity.Professor;
 import br.sistema.model.repository.impl.ProfessorRepositoryImpl;
+import br.sistema.model.service.interfaces.ProfessorService;
+
 import java.util.List;
 
-public class ProfessorServiceImpl {
+public class ProfessorServiceImpl implements ProfessorService {
 
     private final ProfessorRepositoryImpl professorRepositoryImpl;
 
