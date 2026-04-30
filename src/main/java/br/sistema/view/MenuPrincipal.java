@@ -1,7 +1,8 @@
 package br.sistema.view;
 
 import br.sistema.model.entity.*;
-import br.sistema.model.entity.service.*;
+
+import br.sistema.model.service.interfaces.*;
 
 import java.time.format.DateTimeParseException;
 import java.util.*;

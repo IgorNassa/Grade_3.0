@@ -10,7 +10,7 @@ public class AulaControllerImpl {
         this.aulaService = aulaService;
     }
 
-    public void save(AulaDTO aulaDTO){
+    public void save(){
 
     }
 }
