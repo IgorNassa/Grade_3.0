@@ -1,5 +1,6 @@
 package br.sistema;
 import br.sistema.config.database.JPAConfig;
+import br.sistema.model.repository.interfaces.*;
 import br.sistema.model.service.impl.*;
 import br.sistema.model.service.interfaces.*;
 import br.sistema.view.MenuPrincipal;
@@ -49,11 +50,11 @@ public class Main {
         }
 
         try {
-            DisciplinaRepositoryImpl disciplinaRepo = new DisciplinaRepositoryImpl(em);
-            ProfessorRepositoryImpl professorRepo = new ProfessorRepositoryImpl(em);
-            TurnoRepositoryImpl turnoRepo = new TurnoRepositoryImpl(em);
-            TurmaRepositoryImpl turmaRepo = new TurmaRepositoryImpl(em);
-            AulaRepositoryImpl aulaRepo = new AulaRepositoryImpl(em);
+            DisciplinaRepository disciplinaRepo = new DisciplinaRepositoryImpl(em);
+            ProfessorRepository professorRepo = new ProfessorRepositoryImpl(em);
+            TurnoRepository turnoRepo = new TurnoRepositoryImpl(em);
+            TurmaRepository turmaRepo = new TurmaRepositoryImpl(em);
+            AulaRepository aulaRepo = new AulaRepositoryImpl(em);
 
             DisciplinaService disciplinaService = new DisciplinaServiceImpl(disciplinaRepo);
             ProfessorService professorService = new ProfessorServiceImpl(professorRepo);
