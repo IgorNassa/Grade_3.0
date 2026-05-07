@@ -27,53 +27,75 @@ public class AulaServiceImpl implements AulaService {
     );
 
     // Sem parâmetro dinâmico de horas. Mais simples.
+    @Override
     public void gerarGrade(Turma turma, Map<Disciplina, Integer> cargaHoraria) {
         try {
+            if (turma == null || turma.getId() == null) {
+                throw new IllegalArgumentException("Turma inválida para geração da grade.");
+            }
+
+            if (cargaHoraria == null || cargaHoraria.isEmpty()) {
+                throw new IllegalArgumentException("Carga horária não informada.");
+            }
+
             em.getTransaction().begin();
 
-            // 1. Limpa a grade anterior
             em.createQuery("DELETE FROM Aula a WHERE a.turma = :turma")
                     .setParameter("turma", turma)
                     .executeUpdate();
 
-            // 2. Nomes dos dias compatíveis com java.time.DayOfWeek (Inglês/Maiúsculo)
-            // Se sua entidade usa o Enum DayOfWeek, TEM que ser esses valores:
-            List<String> diasSemana = Arrays.asList("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY");
-
             int maxSlotsPorDia = 5;
-            int diaAtualIndex = 0;
-            int slotAtual = 1;
 
             for (Map.Entry<Disciplina, Integer> entrada : cargaHoraria.entrySet()) {
                 Disciplina disciplina = entrada.getKey();
-                int quantidadeAulas = entrada.getValue();
+                Integer quantidadeAulas = entrada.getValue();
 
-                if (disciplina == null) continue;
+                if (disciplina == null || disciplina.getId() == null) {
+                    throw new RuntimeException("Disciplina inválida na carga horária.");
+                }
+
+                if (quantidadeAulas == null || quantidadeAulas <= 0) {
+                    throw new RuntimeException("Carga horária inválida para a disciplina: " + disciplina.getNome());
+                }
 
                 Professor professorApto = buscarProfessorDaDisciplina(disciplina);
 
-                for (int i = 0; i < quantidadeAulas; i++) {
-                    if (diaAtualIndex >= diasSemana.size()) {
+                if (professorApto == null) {
+                    throw new RuntimeException("Nenhum professor vinculado à disciplina: " + disciplina.getNome());
+                }
+
+                int aulasAlocadas = 0;
+
+                for (DayOfWeek dia : DIAS_LETIVOS) {
+                    for (int slot = 1; slot <= maxSlotsPorDia; slot++) {
+                        if (aulasAlocadas == quantidadeAulas) {
+                            break;
+                        }
+
+                        boolean professorOcupado = aulaRepository.professorOcupadoNoBanco(professorApto, dia, slot);
+
+                        if (professorOcupado) {
+                            continue;
+                        }
+
+                        Aula aula = new Aula();
+                        aula.setTurma(turma);
+                        aula.setDisciplina(disciplina);
+                        aula.setProfessor(professorApto);
+                        aula.setDiaDaSemana(dia);
+                        aula.setSlotHorario(slot);
+
+                        aulaRepository.save(aula);
+                        aulasAlocadas++;
+                    }
+
+                    if (aulasAlocadas == quantidadeAulas) {
                         break;
                     }
+                }
 
-                    Aula aula = new Aula();
-                    aula.setTurma(turma);
-                    aula.setDisciplina(disciplina);
-                    aula.setProfessor(professorApto);
-
-                    // 3. Converte a String para o Enum DayOfWeek
-                    aula.setDiaDaSemana(java.time.DayOfWeek.valueOf(diasSemana.get(diaAtualIndex)));
-
-                    aula.setSlotHorario(slotAtual);
-
-                    em.persist(aula);
-
-                    slotAtual++;
-                    if (slotAtual > maxSlotsPorDia) {
-                        slotAtual = 1;
-                        diaAtualIndex++;
-                    }
+                if (aulasAlocadas < quantidadeAulas) {
+                    throw new RuntimeException("Não foi possível alocar todas as aulas da disciplina: " + disciplina.getNome());
                 }
             }
 
@@ -81,20 +103,31 @@ public class AulaServiceImpl implements AulaService {
             System.out.println("Grade gerada com sucesso!");
 
         } catch (Exception e) {
-            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+
             System.err.println("[ERRO CRÍTICO] Falha ao persistir grade: " + e.getMessage());
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException(e.getMessage(), e);
         }
     }
     // Relembrando a função auxiliar corrigida que deve estar na mesma classe:
+    @Override
     public Professor buscarProfessorDaDisciplina(Disciplina disciplina) {
+        if (disciplina == null || disciplina.getId() == null) {
+            return null;
+        }
+
         try {
-            return em.createQuery("SELECT p FROM Professor p WHERE :disc MEMBER OF p.disciplinas", Professor.class)
-                    .setParameter("disc", disciplina)
+            return em.createQuery(
+                            "SELECT p FROM Professor p JOIN p.disciplinas d WHERE d.id = :disciplinaId",
+                            Professor.class
+                    )
+                    .setParameter("disciplinaId", disciplina.getId())
                     .setMaxResults(1)
                     .getSingleResult();
         } catch (NoResultException e) {
-            return null; // Retorna null para gerar aula como "Vaga"
+            return null;
         }
     }
 }
