@@ -53,8 +53,8 @@ public class SidebarPanel extends  JPanel {
         JLabel lblLogo = new JLabel(
                 IconUtil.carregarIcone(
                         "/icons/logo.png",
-                        120,
-                        120
+                        88,
+                        88
                 )
         );
         lblLogo.setAlignmentX(Component.CENTER_ALIGNMENT);
