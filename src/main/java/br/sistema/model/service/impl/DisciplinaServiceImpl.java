@@ -1,6 +1,10 @@
 package br.sistema.model.service.impl;
 
 import br.sistema.model.entity.Disciplina;
+import br.sistema.model.exception.BusinessException;
+import br.sistema.model.exception.NotFoundException;
+import br.sistema.model.exception.ValidationException;
+import br.sistema.model.exception.DuplicateResourceExecption;
 import br.sistema.model.repository.interfaces.DisciplinaRepository;
 import br.sistema.model.service.interfaces.DisciplinaService;
 
@@ -22,12 +26,16 @@ public class DisciplinaServiceImpl implements DisciplinaService {
             Disciplina disciplinaExiste = disciplinaRepository.findByName(disciplina.getNome());
 
             if (disciplinaExiste != null) {
-                throw new RuntimeException("Já existe uma disciplina cadastrada com este nome: " + disciplina.getNome());
+                throw new DuplicateResourceExecption("Já existe uma disciplina cadastrada com este nome: " + disciplina.getNome());
             }
 
             disciplinaRepository.save(disciplina);
 
-        } catch (Exception e) {
+        } catch (BusinessException e) {
+            System.err.println("[ERRO SERVICE] " + e.getMessage());
+            throw e;
+        }
+        catch (Exception e) {
             System.err.println("[ERRO] Falha na operação salvar: " + e.getMessage());
             throw new RuntimeException("Erro ao salvar a disciplina.", e);
         }
@@ -39,28 +47,31 @@ public class DisciplinaServiceImpl implements DisciplinaService {
             validarDisciplina(disciplina);
 
             if (disciplina.getId() == null) {
-                throw new IllegalArgumentException("O ID da disciplina é obrigatório para atualização.");
+                throw new ValidationException("O ID da disciplina é obrigatório para atualização.");
             }
 
             Disciplina disciplinaExiste = disciplinaRepository.findById(disciplina.getId());
 
             if (disciplinaExiste == null) {
-                throw new RuntimeException("Disciplina não encontrada na base de dados para atualizar.");
+                throw new NotFoundException("Disciplina não encontrada na base de dados para atualizar.");
             }
 
             Disciplina disciplinaComMesmoNome = disciplinaRepository.findByName(disciplina.getNome());
 
             if (disciplinaComMesmoNome != null && !disciplinaComMesmoNome.getId().equals(disciplina.getId())) {
-                throw new RuntimeException("Já existe outra disciplina cadastrada com este nome: " + disciplina.getNome());
+                throw new DuplicateResourceExecption("Já existe outra disciplina cadastrada com este nome: " + disciplina.getNome());
             }
 
             disciplinaExiste.setNome(disciplina.getNome());
 
             disciplinaRepository.update(disciplinaExiste);
 
+        } catch (BusinessException e) {
+            System.err.println("[ERRO SERVICE] " + e.getMessage());
+            throw e;
         } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação update: " + e.getMessage());
-            throw new RuntimeException("Erro ao atualizar a disciplina.", e);
+            System.err.println("[ERRO SERVICE] Erro inesperado ao atualizar disciplina: " + e.getMessage());
+            throw new BusinessException("Erro inesperado ao atualizar disciplina.", e);
         }
     }
 
@@ -68,7 +79,7 @@ public class DisciplinaServiceImpl implements DisciplinaService {
     public void delete(Disciplina disciplina) {
         try {
             if (disciplina == null) {
-                throw new IllegalArgumentException("Disciplina inválida para exclusão.");
+                throw new ValidationException("Disciplina inválida para exclusão.");
             }
 
             Disciplina disciplinaExiste = null;
@@ -82,14 +93,17 @@ public class DisciplinaServiceImpl implements DisciplinaService {
             }
 
             if (disciplinaExiste == null) {
-                throw new RuntimeException("Disciplina não encontrada na base de dados para exclusão.");
+                throw new NotFoundException("Disciplina não encontrada na base de dados para exclusão.");
             }
 
             disciplinaRepository.delete(disciplinaExiste);
 
+        } catch (BusinessException e) {
+            System.err.println("[ERRO SERVICE] " + e.getMessage());
+            throw e;
         } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação delete: " + e.getMessage());
-            throw new RuntimeException("Erro ao excluir a disciplina.", e);
+            System.err.println("[ERRO SERVICE] Erro inesperado ao excluir disciplina: " + e.getMessage());
+            throw new BusinessException("Erro inesperado ao excluir disciplina.", e);
         }
     }
 
@@ -105,8 +119,8 @@ public class DisciplinaServiceImpl implements DisciplinaService {
             return disciplinas;
 
         } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação findAll: " + e.getMessage());
-            throw new RuntimeException("Erro ao buscar a lista de disciplinas.", e);
+            System.err.println("[ERRO SERVICE] Erro inesperado ao listar disciplinas: " + e.getMessage());
+            throw new BusinessException("Erro inesperado ao listar disciplinas.", e);
         }
     }
 
@@ -114,18 +128,21 @@ public class DisciplinaServiceImpl implements DisciplinaService {
     public Disciplina findById(Long id){
         try {
             if(id == null){
-                throw new IllegalArgumentException("O ID da disciplina é obrigatorio para busca.");
+                throw new ValidationException("O ID da disciplina é obrigatorio para busca.");
             }
             Disciplina disciplina = disciplinaRepository.findById(id);
 
             if (disciplina == null) {
-                throw new RuntimeException("Disciplina nao encontrada.");
+                throw new NotFoundException("Disciplina nao encontrada.");
             }
             return  disciplina;
-        }
-        catch (Exception e){
-            System.err.println("[ERRO] Falha na operação findById: " + e.getMessage());
-            throw new RuntimeException("Erro ao buscar a disciplina pelo ID.", e);
+
+        } catch (BusinessException e) {
+            System.err.println("[ERRO SERVICE] " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.err.println("[ERRO SERVICE] Erro inesperado ao buscar disciplina por ID: " + e.getMessage());
+            throw new BusinessException("Erro inesperado ao buscar disciplina por ID.", e);
         }
     }
 
@@ -146,11 +163,11 @@ public class DisciplinaServiceImpl implements DisciplinaService {
 
     private void validarDisciplina(Disciplina disciplina) {
         if (disciplina == null) {
-            throw new IllegalArgumentException("Disciplina inválida.");
+            throw new ValidationException("Disciplina inválida.");
         }
 
         if (disciplina.getNome() == null || disciplina.getNome().trim().isEmpty()) {
-            throw new IllegalArgumentException("O nome da disciplina não pode ser vazio.");
+            throw new ValidationException("O nome da disciplina não pode ser vazio.");
         }
 
         disciplina.setNome(disciplina.getNome().trim());

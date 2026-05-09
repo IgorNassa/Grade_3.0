@@ -8,6 +8,9 @@ import br.sistema.model.repository.interfaces.AulaRepository;
 import br.sistema.model.service.interfaces.AulaService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
+import br.sistema.model.exception.BusinessException;
+import br.sistema.model.exception.NotFoundException;
+import br.sistema.model.exception.ValidationException;
 
 import java.time.DayOfWeek;
 import java.util.*;
@@ -31,11 +34,11 @@ public class AulaServiceImpl implements AulaService {
     public void gerarGrade(Turma turma, Map<Disciplina, Integer> cargaHoraria) {
         try {
             if (turma == null || turma.getId() == null) {
-                throw new IllegalArgumentException("Turma inválida para geração da grade.");
+                throw new ValidationException("Turma inválida para geração da grade.");
             }
 
             if (cargaHoraria == null || cargaHoraria.isEmpty()) {
-                throw new IllegalArgumentException("Carga horária não informada.");
+                throw new ValidationException("Carga horária não informada.");
             }
 
             em.getTransaction().begin();
@@ -51,17 +54,17 @@ public class AulaServiceImpl implements AulaService {
                 Integer quantidadeAulas = entrada.getValue();
 
                 if (disciplina == null || disciplina.getId() == null) {
-                    throw new RuntimeException("Disciplina inválida na carga horária.");
+                    throw new ValidationException("Disciplina inválida na carga horária.");
                 }
 
                 if (quantidadeAulas == null || quantidadeAulas <= 0) {
-                    throw new RuntimeException("Carga horária inválida para a disciplina: " + disciplina.getNome());
+                    throw new ValidationException("Carga horária inválida para a disciplina: " + disciplina.getNome());
                 }
 
                 Professor professorApto = buscarProfessorDaDisciplina(disciplina);
 
                 if (professorApto == null) {
-                    throw new RuntimeException("Nenhum professor vinculado à disciplina: " + disciplina.getNome());
+                    throw new NotFoundException("Nenhum professor vinculado à disciplina: " + disciplina.getNome());
                 }
 
                 int aulasAlocadas = 0;
@@ -114,7 +117,7 @@ public class AulaServiceImpl implements AulaService {
                 }
 
                 if (aulasAlocadas < quantidadeAulas) {
-                    throw new RuntimeException("Não foi possível alocar todas as aulas da disciplina: " + disciplina.getNome());
+                    throw new BusinessException("Não foi possível alocar todas as aulas da disciplina: " + disciplina.getNome());
                 }
 
             }
@@ -126,20 +129,28 @@ public class AulaServiceImpl implements AulaService {
             em.getTransaction().commit();
             System.out.println("Grade gerada com sucesso!");
 
+        } catch (BusinessException e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+
+            System.err.println("[ERRO SERVICE] " + e.getMessage());
+            throw e;
+
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
 
-            System.err.println("[ERRO CRÍTICO] Falha ao persistir grade: " + e.getMessage());
-            throw new RuntimeException(e.getMessage(), e);
+            System.err.println("[ERRO SERVICE] Erro inesperado ao gerar grade: " + e.getMessage());
+            throw new BusinessException("Erro inesperado ao gerar grade.", e);
         }
     }
     // Relembrando a função auxiliar corrigida que deve estar na mesma classe:
     @Override
     public Professor buscarProfessorDaDisciplina(Disciplina disciplina) {
         if (disciplina == null || disciplina.getId() == null) {
-            return null;
+            throw new ValidationException("Disciplina inválida para busca de professor.");
         }
 
         try {

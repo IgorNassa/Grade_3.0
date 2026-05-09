@@ -3,7 +3,10 @@ package br.sistema.model.service.impl;
 import br.sistema.model.entity.Turno;
 import br.sistema.model.repository.interfaces.TurnoRepository;
 import br.sistema.model.service.interfaces.TurnoService;
-
+import br.sistema.model.exception.DuplicateResourceExecption;
+import br.sistema.model.exception.BusinessException;
+import br.sistema.model.exception.ValidationException;
+import br.sistema.model.exception.NotFoundException;
 import java.util.List;
 
 public class TurnoServiceImpl implements TurnoService {
@@ -24,14 +27,17 @@ public class TurnoServiceImpl implements TurnoService {
             Turno existe = turnoRepository.findByName(nomeStr);
 
             if (existe != null) {
-                throw new RuntimeException("Já existe um turno cadastrado como " + nomeStr);
+                throw new DuplicateResourceExecption("Já existe um turno cadastrado como " + nomeStr);
             }
 
             turnoRepository.save(turno);
 
+        } catch (BusinessException e) {
+            System.err.println("[ERRO SERVICE] " + e.getMessage());
+            throw e;
         } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação salvar: " + e.getMessage());
-            throw new RuntimeException(e.getMessage(), e);
+            System.err.println("[ERRO SERVICE] Erro inesperado ao salvar turno: " + e.getMessage());
+            throw new BusinessException("Erro inesperado ao salvar turno.", e);
         }
     }
 
@@ -39,20 +45,23 @@ public class TurnoServiceImpl implements TurnoService {
     public Turno findById(Long id) {
         try {
             if (id == null) {
-                throw new IllegalArgumentException("ID do turno obrigatório.");
+                throw new ValidationException("ID do turno obrigatório.");
             }
 
             Turno turno = turnoRepository.findById(id);
 
             if (turno == null) {
-                throw new RuntimeException("Turno não encontrado.");
+                throw new NotFoundException("Turno não encontrado.");
             }
 
             return turno;
 
+        } catch (BusinessException e) {
+            System.err.println("[ERRO SERVICE] " + e.getMessage());
+            throw e;
         } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação findById: " + e.getMessage());
-            throw new RuntimeException("Erro ao buscar turno pelo ID.", e);
+            System.err.println("[ERRO SERVICE] Erro inesperado ao buscar turno por ID: " + e.getMessage());
+            throw new BusinessException("Erro inesperado ao buscar turno por ID.", e);
         }
     }
 
@@ -62,19 +71,19 @@ public class TurnoServiceImpl implements TurnoService {
             validarTurno(turno);
 
             if (turno.getId() == null) {
-                throw new IllegalArgumentException("ID do turno obrigatório para atualização.");
+                throw new ValidationException("ID do turno obrigatório para atualização.");
             }
 
             Turno turnoExiste = turnoRepository.findById(turno.getId());
 
             if (turnoExiste == null) {
-                throw new RuntimeException("Turno não encontrado para atualização.");
+                throw new NotFoundException("Turno não encontrado para atualização.");
             }
 
             Turno turnoComMesmoNome = turnoRepository.findByName(turno.getNomeTurno().name());
 
             if (turnoComMesmoNome != null && !turnoComMesmoNome.getId().equals(turno.getId())) {
-                throw new RuntimeException("Já existe outro turno cadastrado com este nome.");
+                throw new DuplicateResourceExecption("Já existe outro turno cadastrado com este nome.");
             }
 
             turnoExiste.setNomeTurno(turno.getNomeTurno());
@@ -85,9 +94,12 @@ public class TurnoServiceImpl implements TurnoService {
 
             turnoRepository.update(turnoExiste);
 
+        } catch (BusinessException e) {
+            System.err.println("[ERRO SERVICE] " + e.getMessage());
+            throw e;
         } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação update: " + e.getMessage());
-            throw new RuntimeException(e.getMessage(), e);
+            System.err.println("[ERRO SERVICE] Erro inesperado ao atualizar turno: " + e.getMessage());
+            throw new BusinessException("Erro inesperado ao atualizar turno.", e);
         }
     }
 
@@ -95,7 +107,7 @@ public class TurnoServiceImpl implements TurnoService {
     public void delete(Turno turno) {
         try {
             if (turno == null) {
-                throw new IllegalArgumentException("Turno inválido para exclusão.");
+                throw new ValidationException("Turno inválido para exclusão.");
             }
 
             Turno turnoNoBanco = null;
@@ -109,14 +121,17 @@ public class TurnoServiceImpl implements TurnoService {
             }
 
             if (turnoNoBanco == null) {
-                throw new RuntimeException("Turno não encontrado para exclusão.");
+                throw new NotFoundException("Turno não encontrado para exclusão.");
             }
 
             turnoRepository.delete(turnoNoBanco);
 
+        } catch (BusinessException e) {
+            System.err.println("[ERRO SERVICE] " + e.getMessage());
+            throw e;
         } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação delete: " + e.getMessage());
-            throw new RuntimeException(e.getMessage(), e);
+            System.err.println("[ERRO SERVICE] Erro inesperado ao excluir turno: " + e.getMessage());
+            throw new BusinessException("Erro inesperado ao excluir turno.", e);
         }
     }
 
@@ -126,7 +141,8 @@ public class TurnoServiceImpl implements TurnoService {
             return turnoRepository.findAll();
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao buscar a lista de turnos.", e);
+            System.err.println("[ERRO SERVICE] Erro inesperado ao listar turnos: " + e.getMessage());
+            throw new BusinessException("Erro inesperado ao listar turnos.", e);
         }
     }
 
@@ -140,33 +156,34 @@ public class TurnoServiceImpl implements TurnoService {
             return turnoRepository.findByName(nome.trim().toUpperCase());
 
         } catch (Exception e) {
+            System.err.println("[ERRO SERVICE] Erro inesperado ao buscar turno por nome: " + e.getMessage());
             return null;
         }
     }
 
     private void validarTurno(Turno turno) {
         if (turno == null) {
-            throw new IllegalArgumentException("Turno inválido.");
+            throw new ValidationException("Turno inválido.");
         }
 
         if (turno.getNomeTurno() == null) {
-            throw new IllegalArgumentException("Nome inválido.");
+            throw new ValidationException("Nome inválido.");
         }
 
         if (turno.getInicioTurno() == null || turno.getFimTurno() == null) {
-            throw new IllegalArgumentException("Horário vazio.");
+            throw new ValidationException("Horário vazio.");
         }
 
         if (turno.getInicioTurno().isAfter(turno.getFimTurno())) {
-            throw new IllegalArgumentException("Início após o fim.");
+            throw new ValidationException("Início após o fim.");
         }
 
         if (turno.getTempoAula() == null || turno.getTempoAula() <= 0) {
-            throw new IllegalArgumentException("Tempo de aula inválido.");
+            throw new ValidationException("Tempo de aula inválido.");
         }
 
         if (turno.getAulasTurno() == null || turno.getAulasTurno() <= 0) {
-            throw new IllegalArgumentException("Qtd aulas inválida.");
+            throw new ValidationException("Qtd aulas inválida.");
         }
     }
 }
