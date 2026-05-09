@@ -79,11 +79,17 @@ public class DisciplinaRepositoryImpl implements DisciplinaRepository {
 
     @Override
     public Disciplina findById(Long id) {
+        if (id == null) {
+            return null;
+        }
         return em.find(Disciplina.class, id);
     }
 
     @Override
     public Disciplina findByName(String nome) {
+        if (nome == null || nome.trim().isEmpty()){
+            return null;
+        }
         try {
             return em.createQuery(
                             "SELECT d FROM Disciplina d WHERE LOWER(d.nome) = LOWER(:nome)",

@@ -40,11 +40,11 @@ public class AulaServiceImpl implements AulaService {
 
             em.getTransaction().begin();
 
-            em.createQuery("DELETE FROM Aula a WHERE a.turma = :turma")
-                    .setParameter("turma", turma)
-                    .executeUpdate();
+            aulaRepository.deleteByTurma(turma);
 
             int maxSlotsPorDia = 5;
+
+            List<Aula> aulasParaSalvar = new ArrayList<>();
 
             for (Map.Entry<Disciplina, Integer> entrada : cargaHoraria.entrySet()) {
                 Disciplina disciplina = entrada.getKey();
@@ -74,7 +74,26 @@ public class AulaServiceImpl implements AulaService {
 
                         boolean professorOcupado = aulaRepository.professorOcupadoNoBanco(professorApto, dia, slot);
 
-                        if (professorOcupado) {
+                        if (!professorOcupado) {
+                            for (Aula a : aulasParaSalvar) {
+                                if (a.getProfessor().equals(professorApto) && a.getDiaDaSemana() == dia && a.getSlotHorario() == slot) {
+                                    professorOcupado = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        boolean turmaOcupada = aulaRepository.turmaOcupadaNoBanco(turma, dia, slot);
+                        if (!turmaOcupada){
+                            for (Aula a : aulasParaSalvar){
+                                if (a.getTurma().equals(turma) && a.getDiaDaSemana() == dia && a.getSlotHorario().equals(slot)){
+                                    turmaOcupada = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (professorOcupado || turmaOcupada) {
                             continue;
                         }
 
@@ -85,7 +104,7 @@ public class AulaServiceImpl implements AulaService {
                         aula.setDiaDaSemana(dia);
                         aula.setSlotHorario(slot);
 
-                        aulaRepository.save(aula);
+                        aulasParaSalvar.add(aula);
                         aulasAlocadas++;
                     }
 
@@ -97,6 +116,11 @@ public class AulaServiceImpl implements AulaService {
                 if (aulasAlocadas < quantidadeAulas) {
                     throw new RuntimeException("Não foi possível alocar todas as aulas da disciplina: " + disciplina.getNome());
                 }
+
+            }
+
+            if (!aulasParaSalvar.isEmpty()) {
+                aulaRepository.saveAll(aulasParaSalvar);
             }
 
             em.getTransaction().commit();

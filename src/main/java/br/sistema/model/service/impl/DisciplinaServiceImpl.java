@@ -109,9 +109,26 @@ public class DisciplinaServiceImpl implements DisciplinaService {
             throw new RuntimeException("Erro ao buscar a lista de disciplinas.", e);
         }
     }
-    // ==========================================
-// NOVO MÉTODO: FIND BY NAME
-// ==========================================
+
+    @Override
+    public Disciplina findById(Long id){
+        try {
+            if(id == null){
+                throw new IllegalArgumentException("O ID da disciplina é obrigatorio para busca.");
+            }
+            Disciplina disciplina = disciplinaRepository.findById(id);
+
+            if (disciplina == null) {
+                throw new RuntimeException("Disciplina nao encontrada.");
+            }
+            return  disciplina;
+        }
+        catch (Exception e){
+            System.err.println("[ERRO] Falha na operação findById: " + e.getMessage());
+            throw new RuntimeException("Erro ao buscar a disciplina pelo ID.", e);
+        }
+    }
+
     @Override
     public Disciplina findByName(String nome) {
         try {

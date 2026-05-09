@@ -30,21 +30,54 @@ public class Aula {
     @Column(name = "slot_horario", nullable = false)
     private Integer slotHorario;
 
-    // Construtores, Getters e Setters
-    public Aula() {}
+    public Aula() {
+    }
 
-    public Turma getTurma() { return turma; }
-    public void setTurma(Turma turma) { this.turma = turma; }
+    public Long getId() {
+        return id;
+    }
 
-    public Professor getProfessor() { return professor; }
-    public void setProfessor(Professor professor) { this.professor = professor; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public Disciplina getDisciplina() { return disciplina; }
-    public void setDisciplina(Disciplina disciplina) { this.disciplina = disciplina; }
+    public Turma getTurma() {
+        return turma;
+    }
 
-    public DayOfWeek getDiaDaSemana() { return diaDaSemana; }
-    public void setDiaDaSemana(DayOfWeek diaDaSemana) { this.diaDaSemana = diaDaSemana; }
+    public void setTurma(Turma turma) {
+        this.turma = turma;
+    }
 
-    public Integer getSlotHorario() { return slotHorario; }
-    public void setSlotHorario(Integer slotHorario) { this.slotHorario = slotHorario; }
+    public Professor getProfessor() {
+        return professor;
+    }
+
+    public void setProfessor(Professor professor) {
+        this.professor = professor;
+    }
+
+    public Disciplina getDisciplina() {
+        return disciplina;
+    }
+
+    public void setDisciplina(Disciplina disciplina) {
+        this.disciplina = disciplina;
+    }
+
+    public DayOfWeek getDiaDaSemana() {
+        return diaDaSemana;
+    }
+
+    public void setDiaDaSemana(DayOfWeek diaDaSemana) {
+        this.diaDaSemana = diaDaSemana;
+    }
+
+    public Integer getSlotHorario() {
+        return slotHorario;
+    }
+
+    public void setSlotHorario(Integer slotHorario) {
+        this.slotHorario = slotHorario;
+    }
 }
