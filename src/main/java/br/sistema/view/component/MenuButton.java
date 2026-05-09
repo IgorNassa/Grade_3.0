@@ -6,16 +6,22 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 public class MenuButton extends JButton {
-    private static final Color COR_BG = new Color(28, 17, 41);
-    private static final Color COR_A = new Color(123, 63, 125);
+    private static final Color COR_BG = new Color(29, 19, 60);
+    private static final Color COR_A = new Color(91, 28, 152);
     private static final Color COR_H = new Color(92, 51, 122);
     private static final Color COR_TXT= Color.WHITE;
+    private static final int RAIO_BORDA = 14;
 
     private  boolean ativo;
 
-    public MenuButton(String txt,boolean ativo){
+    public MenuButton(String txt,Icon icone, boolean ativo){
         super(txt);
         this.ativo = ativo;
+
+        setIcon(icone);
+        setIconTextGap(10);
+        setHorizontalAlignment(SwingConstants.LEFT);
+        setBorder(BorderFactory.createEmptyBorder(0, 14, 0, 0));
 
         configurarVisual();
         configurarHover();
@@ -31,11 +37,15 @@ public class MenuButton extends JButton {
         atualizarVisual();
 
         setHorizontalAlignment(SwingConstants.LEFT);
-        setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
+        setBorder(BorderFactory.createEmptyBorder(0, 14, 0, 0));
 
         setFocusPainted(false);
         setContentAreaFilled(true);
         setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        setOpaque(false);
+        setContentAreaFilled(false);
+        setBorderPainted(false);
 
     }
 
@@ -64,5 +74,28 @@ public class MenuButton extends JButton {
     public void setAtivo(boolean ativo){
         this.ativo = ativo;
         atualizarVisual();
+    }
+
+    @Override
+        protected  void paintComponent(Graphics g){
+        Graphics2D g2 = (Graphics2D) g.create();
+
+        g2.setRenderingHint(
+                RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON
+        );
+
+        g2.setColor(getBackground());
+
+        g2.fillRoundRect(
+                0,
+                0,
+                getWidth(),
+                getHeight(),
+                RAIO_BORDA,
+                RAIO_BORDA
+        );
+        g2.dispose();
+        super.paintComponent(g);
     }
 }
