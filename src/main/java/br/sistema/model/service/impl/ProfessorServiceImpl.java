@@ -1,6 +1,8 @@
 package br.sistema.model.service.impl;
 
+import br.sistema.controller.dtos.ProfessorDTO;
 import br.sistema.model.entity.Professor;
+import br.sistema.util.ProfessorMapper;
 import br.sistema.model.repository.impl.ProfessorRepositoryImpl;
 import br.sistema.model.service.interfaces.ProfessorService;
 
@@ -14,74 +16,66 @@ public class ProfessorServiceImpl implements ProfessorService {
         this.professorRepositoryImpl = professorRepositoryImpl;
     }
 
-    public void save(Professor professor) {
+    @Override
+    public void save(ProfessorDTO professorDTO) {
         try {
-            if (professor.getNome() == null || professor.getNome().trim().isEmpty()) {
-                throw new IllegalArgumentException("Nome do professor obrigatório.");
+            if (professorDTO.nome() == null || professorDTO.nome().trim().isEmpty()) {
+                throw new IllegalArgumentException("Nome do professor é obrigatório.");
             }
 
-            Professor existe = professorRepositoryImpl.findByName(professor.getNome());
+            Professor existe = professorRepositoryImpl.findByName(professorDTO.nome().trim());
             if (existe != null) {
                 throw new RuntimeException("Professor já cadastrado!");
             }
 
-            professorRepositoryImpl.save(professor);
+            Professor entity = ProfessorMapper.INSTANCE.toEntity(professorDTO);
+            professorRepositoryImpl.save(entity);
         } catch (Exception e) {
-            System.err.println("[ERRO SERVICE] " + e.getMessage());
-            throw e;
-        }
-    }
-
-    public void update(Professor professor) {
-        try {
-            if (professor.getNome() == null || professor.getNome().trim().isEmpty()) {
-                throw new IllegalArgumentException("Nome inválido para atualização.");
-            }
-
-            Professor professorExiste = professorRepositoryImpl.findByName(professor.getNome().toLowerCase().trim());
-            if (professorExiste == null) {
-                throw new RuntimeException("Professor não encontrado para atualizar.");
-            }
-
-            professorRepositoryImpl.update(professor);
-
-        } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação update: " + e.getMessage());
-            throw new RuntimeException("Erro ao atualizar o professor.", e);
-        }
-    }
-
-    public void delete(Professor professor) {
-        try {
-            // 1. Busca o professor real no banco pelo nome (usando o ignore case que aplicamos no repo)
-            Professor professorNoBanco = professorRepositoryImpl.findByName(professor.getNome().trim());
-
-            if (professorNoBanco == null) {
-                throw new RuntimeException("Professor não encontrado para exclusão: " + professor.getNome());
-            }
-
-            // 2. Passa o objeto "anexado" (managed) para o repositório deletar
-            professorRepositoryImpl.delete(professorNoBanco);
-
-        } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação delete: " + e.getMessage());
+            System.err.println("[ERRO]" + e.getMessage());
             throw new RuntimeException(e.getMessage());
         }
     }
 
-    public List<Professor> findAll() {
+    @Override
+    public void update(ProfessorDTO professorDTO) {
         try {
-            return professorRepositoryImpl.findAll();
+            Professor noBanco = professorRepositoryImpl.findByName(professorDTO.nome());
+            if (noBanco == null) {
+                throw new RuntimeException("Professor não encontrado para ID: " + professorDTO.id());
+            }
+
+            Professor entity = ProfessorMapper.INSTANCE.toEntity(professorDTO);
+            professorRepositoryImpl.update(entity);
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao buscar a lista de professores.", e);
+            System.err.println("Falha no update:" + e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
     }
 
-    public Professor findByName(String nome) {
+    @Override
+    public void delete(ProfessorDTO professorDTO) {
         try {
-            return professorRepositoryImpl.findByName(nome.toLowerCase().trim());
+            Professor noBanco = professorRepositoryImpl.findByName(professorDTO.nome());
+            if (noBanco == null) {
+                throw new RuntimeException("Professor não encontrado para exclusão.");
+            }
+            professorRepositoryImpl.delete(noBanco);
         } catch (Exception e) {
-            return null;
+            System.err.println("Falha no delete:" + e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
+    }
+
+    @Override
+    public List<ProfessorDTO> findAll() {
+        return professorRepositoryImpl.findAll().stream()
+                .map(ProfessorMapper.INSTANCE::toDTO)
+                .toList();
+    }
+
+    @Override
+    public ProfessorDTO findByName(String nome) {
+        Professor p = professorRepositoryImpl.findByName(nome);
+        return (p != null) ? ProfessorMapper.INSTANCE.toDTO(p) : null;
     }
 }

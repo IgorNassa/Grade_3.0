@@ -3,11 +3,11 @@ package br.sistema.controller.impl;
 
 import br.sistema.model.service.interfaces.AulaService;
 
-public class AulaController {
+public class AulaControllerImpl {
 
     private final AulaService aulaService;
 
-    public AulaController(AulaService aulaService) {
+    public AulaControllerImpl(AulaService aulaService) {
         this.aulaService = aulaService;
     }
 

@@ -1,9 +1,10 @@
-package br.sistema.model.service.interfaces;
+package br.sistema.controller.interfaces;
 
 import br.sistema.controller.dtos.DisciplinaDTO;
 import java.util.List;
 
-public interface DisciplinaService {
+public interface DisciplinaController {
+
     void save(DisciplinaDTO disciplinaDTO);
 
     void update(DisciplinaDTO disciplinaDTO);

@@ -1,6 +1,8 @@
 package br.sistema.model.service.impl;
 
+import br.sistema.controller.dtos.DisciplinaDTO;
 import br.sistema.model.entity.Disciplina;
+import br.sistema.util.DisciplinaMapper;
 import br.sistema.model.repository.impl.DisciplinaRepositoryImpl;
 import br.sistema.model.service.interfaces.DisciplinaService;
 
@@ -10,96 +12,70 @@ public class DisciplinaServiceImpl implements DisciplinaService {
 
     private final DisciplinaRepositoryImpl disciplinaRepositoryImpl;
 
-    public DisciplinaServiceImpl(DisciplinaRepositoryImpl disciplinaRepositoryImpl){
+    public DisciplinaServiceImpl(DisciplinaRepositoryImpl disciplinaRepositoryImpl) {
         this.disciplinaRepositoryImpl = disciplinaRepositoryImpl;
     }
 
-    public void save(Disciplina disciplina) {
+    @Override
+    public void save(DisciplinaDTO disciplinaDTO) {
         try {
-            if (disciplina.getNome() == null || disciplina.getNome().trim().isEmpty()){
-                throw new IllegalArgumentException("O nome da disciplina não pode ser vazio.");
+            if (disciplinaDTO.nome() == null || disciplinaDTO.nome().trim().isEmpty()) {
+                throw new IllegalArgumentException("Nome da disciplina é obrigatório.");
             }
 
-            Disciplina disciplinaExiste = disciplinaRepositoryImpl.findByName(disciplina.getNome());
-
-            if (disciplinaExiste != null) {
-                throw new RuntimeException("Já existe uma disciplina cadastrada com este nome: " + disciplina.getNome());
+            Disciplina existe = disciplinaRepositoryImpl.findByName(disciplinaDTO.nome().trim());
+            if (existe != null) {
+                throw new RuntimeException("Disciplina já cadastrada!");
             }
 
-            disciplinaRepositoryImpl.save(disciplina);
-
+            Disciplina entity = DisciplinaMapper.INSTANCE.toEntity(disciplinaDTO);
+            disciplinaRepositoryImpl.save(entity);
         } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação salvar: " + e.getMessage());
-            throw new RuntimeException("Erro ao salvar a disciplina.", e);
+            System.err.println("[ERRO] " + e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
     }
 
-    public void update(Disciplina disciplina) {
+    @Override
+    public void update(DisciplinaDTO disciplinaDTO) {
         try {
-            if (disciplina.getNome() == null || disciplina.getNome().trim().isEmpty()){
-                throw new IllegalArgumentException("Nome inválido para atualização.");
+            Disciplina noBanco = disciplinaRepositoryImpl.findByName(disciplinaDTO.nome());
+            if (noBanco == null) {
+                throw new RuntimeException("Disciplina não encontrada para ID: " + disciplinaDTO.id());
             }
 
-            Disciplina disciplinaExiste = disciplinaRepositoryImpl.findByName(disciplina.getNome());
-
-            if (disciplinaExiste == null) {
-                throw new RuntimeException("Disciplina não encontrada na base de dados para atualizar.");
-            }
-
-            disciplinaRepositoryImpl.update(disciplina);
-
+            Disciplina entity = DisciplinaMapper.INSTANCE.toEntity(disciplinaDTO);
+            disciplinaRepositoryImpl.update(entity);
         } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação update: " + e.getMessage());
-            throw new RuntimeException("Erro ao atualizar a disciplina.", e);
+            System.err.println("[ERRO] Falha no update: " + e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
     }
 
-    public void delete(Disciplina disciplina) {
+    @Override
+    public void delete(DisciplinaDTO disciplinaDTO) {
         try {
-            Disciplina disciplinaExiste = disciplinaRepositoryImpl.findByName(disciplina.getNome());
-
-            if (disciplinaExiste == null) {
-                throw new RuntimeException("Disciplina não encontrada na base de dados para exclusão.");
+            Disciplina noBanco = disciplinaRepositoryImpl.findByName(disciplinaDTO.nome());
+            if (noBanco == null) {
+                throw new RuntimeException("Disciplina não encontrada para exclusão.");
             }
-
-            disciplinaRepositoryImpl.delete(disciplina);
-
+            disciplinaRepositoryImpl.delete(noBanco);
         } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação delete: " + e.getMessage());
-            throw new RuntimeException("Erro ao excluir a disciplina.", e);
+            System.err.println("[ERRO] Falha no delete: " + e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
     }
 
-    public List<Disciplina> findAll() {
-        try {
-            List<Disciplina> disciplinas = disciplinaRepositoryImpl.findAll();
-
-            if (disciplinas == null || disciplinas.isEmpty()) {
-                System.out.println("Nenhuma disciplina cadastrada no momento.");
-            }
-
-            return disciplinas;
-
-        } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação findAll: " + e.getMessage());
-            throw new RuntimeException("Erro ao buscar a lista de disciplinas.", e);
-        }
+    @Override
+    public List<DisciplinaDTO> findAll() {
+        return disciplinaRepositoryImpl.findAll().stream()
+                .map(DisciplinaMapper.INSTANCE::toDTO)
+                .toList();
     }
 
-    // ==========================================
-    // NOVO MÉTODO: FIND BY NAME
-    // ==========================================
-    public Disciplina findByName(String nome) {
-        try {
-            if (nome == null || nome.trim().isEmpty()) {
-                throw new IllegalArgumentException("O nome para busca não pode ser vazio.");
-            }
-
-            return disciplinaRepositoryImpl.findByName(nome);
-
-        } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação findByName: " + e.getMessage());
-            throw new RuntimeException("Erro ao buscar a disciplina pelo nome.", e);
-        }
+    @Override
+    public DisciplinaDTO findByName(String nome) {
+        Disciplina d = disciplinaRepositoryImpl.findByName(nome);
+        return (d != null) ? DisciplinaMapper.INSTANCE.toDTO(d) : null;
     }
 }

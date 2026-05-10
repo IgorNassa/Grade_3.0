@@ -1,6 +1,8 @@
 package br.sistema.model.service.impl;
 
+import br.sistema.controller.dtos.TurnoDTO;
 import br.sistema.model.entity.Turno;
+import br.sistema.util.TurnoMapper;
 import br.sistema.model.repository.impl.TurnoRepositoryImpl;
 import br.sistema.model.service.interfaces.TurnoService;
 
@@ -15,59 +17,70 @@ public class TurnoServiceImpl implements TurnoService {
     }
 
     @Override
-    public void save(Turno turno) {
+    public void save(TurnoDTO turnoDTO) {
         try {
-            validarTurno(turno);
+            validarTurnoDTO(turnoDTO);
 
-            String nomeStr = turno.getNomeTurno().toString();
+            String nomeStr = turnoDTO.nomeTurno().toString();
             Turno existe = turnoRepositoryImpl.findByName(nomeStr);
+
             if (existe != null) {
                 throw new RuntimeException("Já existe um turno cadastrado como " + nomeStr);
             }
 
-            turnoRepositoryImpl.save(turno);
+            Turno entity = TurnoMapper.INSTANCE.toEntity(turnoDTO);
+            turnoRepositoryImpl.save(entity);
         } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação salvar: " + e.getMessage());
+            System.err.println("[ERRO SERVICE] " + e.getMessage());
             throw new RuntimeException(e.getMessage());
         }
     }
 
-    public void update(Turno turno) {
+    @Override
+    public void update(TurnoDTO turnoDTO) {
         try {
-            validarTurno(turno);
-            turnoRepositoryImpl.update(turno);
+            validarTurnoDTO(turnoDTO);
+
+            Turno entity = TurnoMapper.INSTANCE.toEntity(turnoDTO);
+            turnoRepositoryImpl.update(entity);
         } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação update: " + e.getMessage());
+            System.err.println("[ERRO SERVICE] Falha no update: " + e.getMessage());
             throw new RuntimeException(e.getMessage());
         }
     }
 
-    public void delete(Turno turno) {
+    @Override
+    public void delete(TurnoDTO turnoDTO) {
         try {
-            Turno existe = turnoRepositoryImpl.findByName(turno.getNomeTurno().toString());
+            Turno existe = turnoRepositoryImpl.findByName(turnoDTO.nomeTurno().toString());
             if (existe == null) {
                 throw new RuntimeException("Turno não encontrado para exclusão.");
             }
             turnoRepositoryImpl.delete(existe);
         } catch (Exception e) {
-            System.err.println("[ERRO] Falha na operação delete: " + e.getMessage());
+            System.err.println("[ERRO SERVICE] Falha no delete: " + e.getMessage());
             throw new RuntimeException(e.getMessage());
         }
     }
 
-    public List<Turno> findAll() {
-        return turnoRepositoryImpl.findAll();
+    @Override
+    public List<TurnoDTO> findAll() {
+        return turnoRepositoryImpl.findAll().stream()
+                .map(TurnoMapper.INSTANCE::toDTO)
+                .toList();
     }
 
-    public Turno findByName(String nome) {
-        return turnoRepositoryImpl.findByName(nome.toUpperCase().trim());
+    @Override
+    public TurnoDTO findByName(String nome) {
+        Turno t = turnoRepositoryImpl.findByName(nome.toUpperCase().trim());
+        return (t != null) ? TurnoMapper.INSTANCE.toDTO(t) : null;
     }
 
-    private void validarTurno(Turno t) {
-        if (t.getNomeTurno() == null) throw new IllegalArgumentException("Nome inválido.");
-        if (t.getInicioTurno() == null || t.getFimTurno() == null) throw new IllegalArgumentException("Horário vazio.");
-        if (t.getInicioTurno().isAfter(t.getFimTurno())) throw new IllegalArgumentException("Início após o fim.");
-        if (t.getTempoAula() == null || t.getTempoAula() <= 0) throw new IllegalArgumentException("Tempo de aula inválido.");
-        if (t.getAulasTurno() == null || t.getAulasTurno() <= 0) throw new IllegalArgumentException("Qtd aulas inválida.");
+    private void validarTurnoDTO(TurnoDTO t) {
+        if (t.nomeTurno() == null) throw new IllegalArgumentException("Nome do turno inválido.");
+        if (t.inicioTurno() == null || t.fimTurno() == null) throw new IllegalArgumentException("Horários não podem ser vazios.");
+        if (t.inicioTurno().isAfter(t.fimTurno())) throw new IllegalArgumentException("Início não pode ser após o fim.");
+        if (t.tempoAula() == null || t.tempoAula() <= 0) throw new IllegalArgumentException("Tempo de aula inválido.");
+        if (t.aulasTurno() == null || t.aulasTurno() <= 0) throw new IllegalArgumentException("Quantidade de aulas inválida.");
     }
 }
