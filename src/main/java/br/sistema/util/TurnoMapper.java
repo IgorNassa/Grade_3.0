@@ -3,6 +3,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 import br.sistema.model.entity.Turno;
 import br.sistema.controller.dtos.TurnoDTO;
+import org.mapstruct.Mapping;
 
 @Mapper
 public interface TurnoMapper {
@@ -13,5 +14,6 @@ public interface TurnoMapper {
     TurnoDTO toDTO(Turno entity);
 
 
+    @Mapping(target = "id", ignore = true)
     Turno toEntity(TurnoDTO dto);
 }

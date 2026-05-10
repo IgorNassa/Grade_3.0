@@ -4,6 +4,7 @@ import br.sistema.model.entity.Disciplina;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 import java.util.List;
+import org.mapstruct.Mapping;
 
 import org.mapstruct.Mapper;
 
@@ -14,6 +15,7 @@ public interface DisciplinaMapper {
 
     DisciplinaDTO toDTO(Disciplina entity);
 
+    @Mapping(target = "id", ignore = true)
     Disciplina toEntity(DisciplinaDTO dto);
 
     List<DisciplinaDTO> toDTOList(List<Disciplina> disciplinas);
