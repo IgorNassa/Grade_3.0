@@ -165,4 +165,24 @@ public class AulaServiceImpl implements AulaService {
             return null;
         }
     }
+    @Override
+    public void save(Aula aula) {
+        aulaRepository.save(aula);
+    }
+
+    @Override
+    public void update(Aula aula) {
+        aulaRepository.update(aula);
+    }
+
+    @Override
+    public void delete(Aula aula) {
+        aulaRepository.delete(aula);
+    }
+
+    @Override
+    public List<Aula> findAll() {
+        return aulaRepository.findAll();
+    }
+
 }

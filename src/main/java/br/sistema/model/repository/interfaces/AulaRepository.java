@@ -30,5 +30,4 @@ public interface AulaRepository {
 
     boolean turmaOcupadaNoBanco(Turma turma, DayOfWeek dia, Integer slot);
 
-
 }

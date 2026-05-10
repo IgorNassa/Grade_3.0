@@ -5,6 +5,7 @@ import br.sistema.model.entity.TipoTurno;
 import java.time.LocalTime;
 
 public record TurnoDTO(
+        Long id,
         TipoTurno nomeTurno,
         LocalTime inicioTurno,
         LocalTime fimTurno,

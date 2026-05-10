@@ -1,5 +1,4 @@
 package br.sistema;
-
 import br.sistema.config.database.JPAConfig;
 import br.sistema.model.repository.impl.AulaRepositoryImpl;
 import br.sistema.model.repository.impl.DisciplinaRepositoryImpl;
