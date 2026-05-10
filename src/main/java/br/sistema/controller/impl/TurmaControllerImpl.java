@@ -1,6 +1,9 @@
 package br.sistema.controller.impl;
 
 import br.sistema.controller.dtos.TurmaDTO;
+import br.sistema.model.entity.Turma;
+import br.sistema.util.TurmaMapper;
+import java.util.stream.Collectors;
 import br.sistema.controller.interfaces.TurmaController;
 import br.sistema.model.service.interfaces.TurmaService;
 import java.util.List;
@@ -15,26 +18,33 @@ public class TurmaControllerImpl implements TurmaController {
 
     @Override
     public void save(TurmaDTO turmaDTO) {
-        turmaService.save(turmaDTO);
+      Turma turma = TurmaMapper.INSTANCE.toEntity(turmaDTO);
+      turmaService.save(turma);
     }
+    //converte o turmaDTO para turma
 
     @Override
     public void update(TurmaDTO turmaDTO) {
-        turmaService.update(turmaDTO);
+        Turma turma = TurmaMapper.INSTANCE.toEntity(turmaDTO);
+        turmaService.update(turma);
+
     }
 
     @Override
     public void delete(TurmaDTO turmaDTO) {
-        turmaService.delete(turmaDTO);
+        Turma turma = TurmaMapper.INSTANCE.toEntity(turmaDTO);
+        turmaService.delete(turma);
+
     }
 
     @Override
     public List<TurmaDTO> findAll() {
-        return turmaService.findAll();
+      return turmaService.findAll().stream().map(TurmaMapper.INSTANCE::toDTO).collect(Collectors.toList());
     }
 
     @Override
     public TurmaDTO findByName(String nome) {
-        return turmaService.findByName(nome);
+        Turma turma = turmaService.findByName(nome);
+        return TurmaMapper.INSTANCE.toDTO(turma);
     }
 }
