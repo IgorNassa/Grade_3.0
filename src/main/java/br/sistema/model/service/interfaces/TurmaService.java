@@ -9,6 +9,8 @@ public interface TurmaService {
 
     Turma findByName(String nome);
 
+    Turma findById(Long id);
+
     void update(Turma turma);
 
     void delete(Turma turma);

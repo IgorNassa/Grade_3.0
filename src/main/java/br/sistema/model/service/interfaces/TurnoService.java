@@ -8,6 +8,8 @@ public interface TurnoService {
 
     Turno findByName(String nome);
 
+    Turno findById(Long id);
+
     void update(Turno turno);
 
     void delete(Turno turno);

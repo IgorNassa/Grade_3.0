@@ -1,22 +1,24 @@
 package br.sistema.model.repository.impl;
 
 import br.sistema.model.entity.Disciplina;
+import br.sistema.model.repository.interfaces.DisciplinaRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 
 import java.util.List;
 
-public class DisciplinaRepositoryImpl {
+public class DisciplinaRepositoryImpl implements DisciplinaRepository {
 
-    private EntityManager em;
+    private final EntityManager em;
 
     public DisciplinaRepositoryImpl(EntityManager em) {
         this.em = em;
     }
 
-    //*C*RUD - Função de inserir no banco
+    @Override
     public void save(Disciplina disciplina) {
         em.getTransaction().begin();
+
         try {
             em.persist(disciplina);
             em.flush();
@@ -26,18 +28,23 @@ public class DisciplinaRepositoryImpl {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
+
             throw e;
         }
     }
 
-    //C*R*UD - Função de listar todos do banco
+    @Override
     public List<Disciplina> findAll() {
-        return em.createQuery("select d from Disciplina d", Disciplina.class).getResultList();
+        return em.createQuery(
+                "SELECT d FROM Disciplina d ORDER BY d.nome",
+                Disciplina.class
+        ).getResultList();
     }
 
-    //CR*U*D - Função de atualizar dados do banco
+    @Override
     public void update(Disciplina disciplina) {
         em.getTransaction().begin();
+
         try {
             em.merge(disciplina);
             em.getTransaction().commit();
@@ -45,30 +52,50 @@ public class DisciplinaRepositoryImpl {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
+
             throw e;
         }
     }
 
-    //CRU*D* - Função de deletar dados do banco
+    @Override
     public void delete(Disciplina disciplina) {
         em.getTransaction().begin();
+
         try {
-            Disciplina disciplinaGerenciada = em.contains(disciplina) ? disciplina : em.merge(disciplina);
+            Disciplina disciplinaGerenciada = em.contains(disciplina)
+                    ? disciplina
+                    : em.merge(disciplina);
+
             em.remove(disciplinaGerenciada);
             em.getTransaction().commit();
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
+
             throw e;
         }
     }
 
-    //C*R*UD - Função de listar por nome do banco
+    @Override
+    public Disciplina findById(Long id) {
+        if (id == null) {
+            return null;
+        }
+        return em.find(Disciplina.class, id);
+    }
+
+    @Override
     public Disciplina findByName(String nome) {
+        if (nome == null || nome.trim().isEmpty()){
+            return null;
+        }
         try {
-            return em.createQuery("SELECT d FROM Disciplina d WHERE LOWER(d.nome) = LOWER(:nome)", Disciplina.class)
-                    .setParameter("nome", nome)
+            return em.createQuery(
+                            "SELECT d FROM Disciplina d WHERE LOWER(d.nome) = LOWER(:nome)",
+                            Disciplina.class
+                    )
+                    .setParameter("nome", nome.trim())
                     .getSingleResult();
         } catch (NoResultException e) {
             return null;

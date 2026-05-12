@@ -1,69 +1,113 @@
 package br.sistema.model.repository.impl;
 
 import br.sistema.model.entity.Turno;
+import br.sistema.model.repository.interfaces.TurnoRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 
 import java.util.List;
 
-public class TurnoRepositoryImpl {
+public class TurnoRepositoryImpl implements TurnoRepository {
 
-    private EntityManager em;
+    private final EntityManager em;
 
     public TurnoRepositoryImpl(EntityManager em) {
         this.em = em;
     }
 
+    @Override
     public void save(Turno turno) {
         em.getTransaction().begin();
+
         try {
             em.persist(turno);
             em.flush();
             em.refresh(turno);
             em.getTransaction().commit();
+
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
+
             throw e;
         }
     }
 
-    public List<Turno> findAll() {
-        return em.createQuery("select t from Turno t", Turno.class).getResultList();
+    @Override
+    public Turno findById(Long id) {
+        if (id == null) {
+            return null;
+        }
+
+        return em.find(Turno.class, id);
     }
 
+    @Override
+    public List<Turno> findAll() {
+        return em.createQuery(
+                "SELECT t FROM Turno t ORDER BY t.id",
+                Turno.class
+        ).getResultList();
+    }
+
+    @Override
     public void update(Turno turno) {
         em.getTransaction().begin();
+
         try {
             em.merge(turno);
             em.getTransaction().commit();
+
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
+
             throw e;
         }
     }
 
+    @Override
     public void delete(Turno turno) {
         em.getTransaction().begin();
+
         try {
-            em.remove(em.contains(turno) ? turno : em.merge(turno));
+            if (turno == null || turno.getId() == null) {
+                throw new IllegalArgumentException("Turno inválido para exclusão.");
+            }
+
+            Turno turnoManaged = em.find(Turno.class, turno.getId());
+
+            if (turnoManaged != null) {
+                em.remove(turnoManaged);
+            }
+
             em.getTransaction().commit();
+
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
+
             throw e;
         }
     }
 
+    @Override
     public Turno findByName(String nome) {
+        if (nome == null || nome.trim().isEmpty()) {
+            return null;
+        }
+
         try {
-            return em.createQuery("SELECT t FROM Turno t WHERE CAST(t.nomeTurno AS string) = :nome", Turno.class)
-                    .setParameter("nome", nome)
+            return em.createQuery(
+                            "SELECT t FROM Turno t WHERE CAST(t.nomeTurno AS string) = :nome",
+                            Turno.class
+                    )
+                    .setParameter("nome", nome.trim().toUpperCase())
                     .getSingleResult();
+
         } catch (NoResultException e) {
             return null;
         }

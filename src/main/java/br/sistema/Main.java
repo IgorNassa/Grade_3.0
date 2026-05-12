@@ -1,17 +1,31 @@
 package br.sistema;
 import br.sistema.config.database.JPAConfig;
-import br.sistema.model.service.impl.*;
-import br.sistema.model.service.interfaces.*;
+import br.sistema.model.repository.impl.AulaRepositoryImpl;
+import br.sistema.model.repository.impl.DisciplinaRepositoryImpl;
+import br.sistema.model.repository.impl.ProfessorRepositoryImpl;
+import br.sistema.model.repository.impl.TurmaRepositoryImpl;
+import br.sistema.model.repository.impl.TurnoRepositoryImpl;
+import br.sistema.model.repository.interfaces.AulaRepository;
+import br.sistema.model.repository.interfaces.DisciplinaRepository;
+import br.sistema.model.repository.interfaces.ProfessorRepository;
+import br.sistema.model.repository.interfaces.TurmaRepository;
+import br.sistema.model.repository.interfaces.TurnoRepository;
+import br.sistema.model.service.impl.AulaServiceImpl;
+import br.sistema.model.service.impl.DisciplinaServiceImpl;
+import br.sistema.model.service.impl.ProfessorServiceImpl;
+import br.sistema.model.service.impl.TurmaServiceImpl;
+import br.sistema.model.service.impl.TurnoServiceImpl;
+import br.sistema.model.service.interfaces.AulaService;
+import br.sistema.model.service.interfaces.DisciplinaService;
+import br.sistema.model.service.interfaces.ProfessorService;
+import br.sistema.model.service.interfaces.TurmaService;
+import br.sistema.model.service.interfaces.TurnoService;
 import br.sistema.view.MenuPrincipal;
 import jakarta.persistence.EntityManager;
 import org.flywaydb.core.Flyway;
-import br.sistema.model.repository.impl.DisciplinaRepositoryImpl;
-import br.sistema.model.repository.impl.ProfessorRepositoryImpl;
-import br.sistema.model.repository.impl.TurnoRepositoryImpl;
-import br.sistema.model.repository.impl.TurmaRepositoryImpl;
-import br.sistema.model.repository.impl.AulaRepositoryImpl;
 
 public class Main {
+
     public static void main(String[] args) {
         System.out.println("========================================");
         System.out.println(" Inicializando o Sistema (SGDG)...");
@@ -22,6 +36,7 @@ public class Main {
         String dbPass = System.getenv().getOrDefault("DB_PASS", "1234");
 
         System.out.println("Verificando e executando migrações do banco de dados (Flyway)...");
+
         try {
             Flyway flyway = Flyway.configure()
                     .dataSource(dbUrl, dbUser, dbPass)
@@ -39,7 +54,8 @@ public class Main {
         }
 
         System.out.println("Conectando ao banco de dados...");
-        EntityManager em = null;
+
+        EntityManager em;
 
         try {
             em = JPAConfig.getEntityManager();
@@ -49,11 +65,11 @@ public class Main {
         }
 
         try {
-            DisciplinaRepositoryImpl disciplinaRepo = new DisciplinaRepositoryImpl(em);
-            ProfessorRepositoryImpl professorRepo = new ProfessorRepositoryImpl(em);
-            TurnoRepositoryImpl turnoRepo = new TurnoRepositoryImpl(em);
-            TurmaRepositoryImpl turmaRepo = new TurmaRepositoryImpl(em);
-            AulaRepositoryImpl aulaRepo = new AulaRepositoryImpl(em);
+            DisciplinaRepository disciplinaRepo = new DisciplinaRepositoryImpl(em);
+            ProfessorRepository professorRepo = new ProfessorRepositoryImpl(em);
+            TurnoRepository turnoRepo = new TurnoRepositoryImpl(em);
+            TurmaRepository turmaRepo = new TurmaRepositoryImpl(em);
+            AulaRepository aulaRepo = new AulaRepositoryImpl(em);
 
             DisciplinaService disciplinaService = new DisciplinaServiceImpl(disciplinaRepo);
             ProfessorService professorService = new ProfessorServiceImpl(professorRepo);
@@ -80,9 +96,10 @@ public class Main {
             System.err.println("[ERRO] Ocorreu um erro inesperado: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            if (em != null && em.isOpen()) {
+            if (em.isOpen()) {
                 em.close();
             }
+
             System.out.println("\nBase de dados desconectada. Sistema encerrado corretamente.");
         }
     }
