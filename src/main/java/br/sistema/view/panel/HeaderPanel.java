@@ -50,6 +50,28 @@ public class HeaderPanel extends  JPanel{
 
 
 
+        JPanel painelDireito = new JPanel();
+
+        painelDireito.setOpaque(false);
+
+        painelDireito.setLayout(
+                new FlowLayout(FlowLayout.RIGHT, 18, 16 )
+
+        );
+        JLabel lblUsuario = new JLabel("Administrador");
+        lblUsuario.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblUsuario.setForeground(new Color(120, 120, 140));
+
+        painelDireito.add(lblUsuario);
+
+        add(painelDireito, BorderLayout.EAST);
+
+
+
+        painelEsquerdo.setBorder(
+                BorderFactory.createEmptyBorder(12, 18, 0, 0)
+        );
+
         JLabel lblTitulo = new JLabel("Dashboard");
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
         lblTitulo.setForeground(COR_TXT);

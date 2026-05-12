@@ -1,5 +1,6 @@
 package br.sistema.view.frame;
 
+import br.sistema.view.panel.ContentPanel;
 import br.sistema.view.panel.HeaderPanel;
 import br.sistema.view.panel.SidebarPanel;
 
@@ -15,6 +16,7 @@ public class DashFrame {
     private final SidebarPanel sidebarPanel = new SidebarPanel();
     private final HeaderPanel headerPanel = new HeaderPanel();
     private final JPanel mainPanel = new JPanel();
+    private final ContentPanel contentPanel = new ContentPanel();
 
     public DashFrame() {
         configurarFrame();
@@ -37,6 +39,8 @@ public class DashFrame {
 
         dashFrame.add(sidebarPanel, BorderLayout.WEST);
         dashFrame.add(mainPanel, BorderLayout.CENTER);
+
+        mainPanel.add(contentPanel, BorderLayout.CENTER);
     }
 
     private void configurarEventos(){
