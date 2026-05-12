@@ -13,10 +13,10 @@ public class DashFrame {
     private static final int ALTURA_FRAME = 720;
 
     private final JFrame dashFrame = new JFrame("Dashboard");
-    private final SidebarPanel sidebarPanel = new SidebarPanel();
+    private final ContentPanel contentPanel = new ContentPanel();
+    private final SidebarPanel sidebarPanel = new SidebarPanel(contentPanel);
     private final HeaderPanel headerPanel = new HeaderPanel();
     private final JPanel mainPanel = new JPanel();
-    private final ContentPanel contentPanel = new ContentPanel();
 
     public DashFrame() {
         configurarFrame();
@@ -36,24 +36,22 @@ public class DashFrame {
     private void montarLayout() {
         mainPanel.setLayout(new BorderLayout());
         mainPanel.add(headerPanel, BorderLayout.NORTH);
+        mainPanel.add(contentPanel, BorderLayout.CENTER);
 
         dashFrame.add(sidebarPanel, BorderLayout.WEST);
         dashFrame.add(mainPanel, BorderLayout.CENTER);
-
-        mainPanel.add(contentPanel, BorderLayout.CENTER);
     }
 
-    private void configurarEventos(){
+    private void configurarEventos() {
         headerPanel.getBtnMenu().addActionListener(e -> alternarSidebar());
     }
 
-    private void alternarSidebar(){
+    private void alternarSidebar() {
         boolean visivel = sidebarPanel.isVisible();
 
         sidebarPanel.setVisible(!visivel);
 
         dashFrame.revalidate();
         dashFrame.repaint();
-
     }
 }

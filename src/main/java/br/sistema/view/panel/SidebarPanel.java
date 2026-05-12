@@ -1,7 +1,7 @@
 package br.sistema.view.panel;
 import br.sistema.view.component.MenuButton;
 import br.sistema.view.util.IconUtil;
-
+import br.sistema.view.panel.ContentPanel;
 import javax.swing.*;
 import java.awt.*;
 
@@ -16,8 +16,12 @@ public class SidebarPanel extends  JPanel {
     private static final Color COR_TXT = Color.WHITE;
     private static final Color COR_TXT_SEC = new Color(71, 57, 105);
 
+    private final ContentPanel contentPanel;
 
-    public SidebarPanel(){
+    public SidebarPanel(ContentPanel contentPanel){
+
+        this.contentPanel = contentPanel;
+
         configurarSidebar();
         montarTopo();
         montarMenu();
@@ -168,9 +172,15 @@ public class SidebarPanel extends  JPanel {
     private void configurarEventos(){
         btnDashboard.addActionListener(e -> ativarBotao(btnDashboard));
         btnProfessores.addActionListener(e -> ativarBotao(btnProfessores));
-        btnDisciplinas.addActionListener(e -> ativarBotao(btnDisciplinas));
+        btnDisciplinas.addActionListener(e -> {
+            ativarBotao(btnDisciplinas);
+            contentPanel.mostrarDisciplina();
+        });
         btnTurmas.addActionListener(e -> ativarBotao(btnTurmas));
-        btnTurnos.addActionListener(e -> ativarBotao(btnTurnos));
+        btnTurnos.addActionListener(e -> {
+            ativarBotao(btnTurnos);
+            contentPanel.mostrarTurno();
+        });
         btnGerarGrade.addActionListener(e -> ativarBotao(btnGerarGrade));
         btnVisualizar.addActionListener(e -> ativarBotao(btnVisualizar));
         btnConfig.addActionListener(e -> ativarBotao(btnConfig));
