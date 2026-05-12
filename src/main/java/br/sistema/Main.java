@@ -21,15 +21,16 @@ import br.sistema.model.service.interfaces.ProfessorService;
 import br.sistema.model.service.interfaces.TurmaService;
 import br.sistema.model.service.interfaces.TurnoService;
 import br.sistema.view.MenuPrincipal;
+import br.sistema.view.frame.DashFrame;
 import jakarta.persistence.EntityManager;
 import org.flywaydb.core.Flyway;
+
 
 public class Main {
 
     public static void main(String[] args) {
-        System.out.println("========================================");
-        System.out.println(" Inicializando o Sistema (SGDG)...");
-        System.out.println("========================================");
+
+
 
         String dbUrl = System.getenv().getOrDefault("DB_URL", "jdbc:postgresql://localhost:5432/grade");
         String dbUser = System.getenv().getOrDefault("DB_USER", "postgres");
@@ -78,6 +79,7 @@ public class Main {
             AulaService aulaService = new AulaServiceImpl(aulaRepo, em);
 
             System.out.println("Iniciando a interface do usuário...");
+            new DashFrame();
 
             System.out.print("\033[H\033[2J");
             System.out.flush();
@@ -102,5 +104,6 @@ public class Main {
 
             System.out.println("\nBase de dados desconectada. Sistema encerrado corretamente.");
         }
+
     }
-}
+}                             
