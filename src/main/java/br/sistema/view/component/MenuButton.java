@@ -1,83 +1,94 @@
 package br.sistema.view.component;
 
+import br.sistema.view.theme.ThemeColors;
+import br.sistema.view.theme.ThemeDimensions;
+import br.sistema.view.theme.ThemeFonts;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 public class MenuButton extends JButton {
-    private static final Color COR_BG = new Color(29, 19, 60);
-    private static final Color COR_A = new Color(91, 28, 152);
-    private static final Color COR_H = new Color(92, 51, 122);
-    private static final Color COR_TXT= Color.WHITE;
-    private static final int RAIO_BORDA = 14;
 
-    private  boolean ativo;
+    private boolean ativo;
 
-    public MenuButton(String txt,Icon icone, boolean ativo){
-        super(txt);
+    public MenuButton(String texto, Icon icone, boolean ativo) {
+        super(texto);
+
         this.ativo = ativo;
 
         setIcon(icone);
-        setIconTextGap(10);
-        setHorizontalAlignment(SwingConstants.LEFT);
-        setBorder(BorderFactory.createEmptyBorder(0, 14, 0, 0));
 
         configurarVisual();
         configurarHover();
     }
 
-    private void configurarVisual(){
-        setMaximumSize(new Dimension(215, 42));
-        setPreferredSize(new Dimension(215, 42));
+    private void configurarVisual() {
+        setMaximumSize(new Dimension(
+                ThemeDimensions.MENU_WIDTH,
+                ThemeDimensions.MENU_HEIGHT
+        ));
+
+        setPreferredSize(new Dimension(
+                ThemeDimensions.MENU_WIDTH,
+                ThemeDimensions.MENU_HEIGHT
+        ));
+
         setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        setFont(new Font("Segoe UI", Font.BOLD, 13));
-        setForeground(COR_TXT);
-        atualizarVisual();
+        setFont(ThemeFonts.MENU);
+        setForeground(ThemeColors.TEXT);
 
         setHorizontalAlignment(SwingConstants.LEFT);
+        setIconTextGap(10);
+
         setBorder(BorderFactory.createEmptyBorder(0, 14, 0, 0));
 
         setFocusPainted(false);
-        setContentAreaFilled(true);
+        setBorderPainted(false);
+        setContentAreaFilled(false);
+        setOpaque(false);
+
         setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        setOpaque(false);
-        setContentAreaFilled(false);
-        setBorderPainted(false);
-
+        atualizarVisual();
     }
 
-    private void configurarHover(){
+    private void configurarHover() {
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                if (!ativo) {
+                    setBackground(ThemeColors.PURPLE_HOVER);
+                    repaint();
+                }
+            }
 
-       addMouseListener(new MouseAdapter() {
-           @Override
-           public void mouseEntered(MouseEvent e) {
-               if (!ativo){
-                   setBackground(COR_H);
-               }
-           }
-
-           @Override
-           public void mouseExited(MouseEvent e) {
-               atualizarVisual();
-           }
-       });
-
+            @Override
+            public void mouseExited(MouseEvent e) {
+                atualizarVisual();
+            }
+        });
     }
 
-    private void atualizarVisual(){
-        setBackground(ativo ? COR_A : COR_BG);
+    private void atualizarVisual() {
+        setBackground(
+                ativo
+                        ? ThemeColors.PURPLE
+                        : new Color(0, 0, 0, 0)
+        );
+
+        repaint();
     }
 
-    public void setAtivo(boolean ativo){
+    public void setAtivo(boolean ativo) {
         this.ativo = ativo;
         atualizarVisual();
     }
 
     @Override
-        protected  void paintComponent(Graphics g){
+    protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
 
         g2.setRenderingHint(
@@ -92,10 +103,12 @@ public class MenuButton extends JButton {
                 0,
                 getWidth(),
                 getHeight(),
-                RAIO_BORDA,
-                RAIO_BORDA
+                ThemeDimensions.MENU_RADIUS,
+                ThemeDimensions.MENU_RADIUS
         );
+
         g2.dispose();
+
         super.paintComponent(g);
     }
 }

@@ -4,17 +4,18 @@ import br.sistema.view.util.IconUtil;
 import br.sistema.view.panel.ContentPanel;
 import javax.swing.*;
 import java.awt.*;
+import br.sistema.view.theme.ThemeColors;
+import br.sistema.view.theme.ThemeDimensions;
+import br.sistema.view.theme.ThemeFonts;
 
 
 
 public class SidebarPanel extends  JPanel {
 
     /* config base*/
-    private static final int LARGURA_SIDEBAR = 250;
-    private static final int ALTURA_SIDEBAR = 720;
-    private static final Color COR_BG = new Color(29, 19, 60);
-    private static final Color COR_TXT = Color.WHITE;
-    private static final Color COR_TXT_SEC = new Color(71, 57, 105);
+    private static final Color COR_BG = ThemeColors.BACKGROUND;
+    private static final Color COR_TXT = ThemeColors.TEXT_TITLE;
+    private static final Color COR_TXT_SEC = ThemeColors.TEXT_MUTED;
 
     private final ContentPanel contentPanel;
 
@@ -46,8 +47,13 @@ public class SidebarPanel extends  JPanel {
     private void configurarSidebar(){
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setPreferredSize(new Dimension(LARGURA_SIDEBAR, ALTURA_SIDEBAR));
-        setBackground(COR_BG);
+        setPreferredSize(
+                new Dimension(
+                        ThemeDimensions.SIDEBAR_WIDTH,
+                        720
+                )
+        );
+        setBackground(ThemeColors.BACKGROUND);
 
     }
 
@@ -56,9 +62,9 @@ public class SidebarPanel extends  JPanel {
 
         JLabel lblLogo = new JLabel(
                 IconUtil.carregarIcone(
-                        "/icons/logo.png",
-                        88,
-                        88
+                        "/icons/fundoFlavioWarken.png",
+                        56,
+                        56
                 )
         );
         lblLogo.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -70,12 +76,12 @@ public class SidebarPanel extends  JPanel {
         add(Box.createVerticalStrut(10));
 
         JLabel lblEscola = new JLabel("COLÉGIO ESTADUAL");
-        lblEscola.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblEscola.setFont(ThemeFonts.BODY);
         lblEscola.setForeground(COR_TXT);
         lblEscola.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel lblNome = new JLabel("PROF. FLÁVIO WARKEN");
-        lblNome.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblNome.setFont(ThemeFonts.BODY);
         lblNome.setForeground(COR_TXT);
         lblNome.setAlignmentX(Component.CENTER_ALIGNMENT);
 
@@ -141,8 +147,8 @@ public class SidebarPanel extends  JPanel {
     private JLabel criarTituloSecao(String txt){
         JLabel label = new JLabel(txt);
 
-        label.setFont(new Font("Segoe UI", Font.PLAIN,11));
-        label.setForeground(COR_TXT_SEC);
+        label.setFont(ThemeFonts.SMALL);
+        label.setForeground(ThemeColors.TEXT_MUTED);
 
         label.setHorizontalAlignment(SwingConstants.LEFT);
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -171,12 +177,21 @@ public class SidebarPanel extends  JPanel {
 
     private void configurarEventos(){
         btnDashboard.addActionListener(e -> ativarBotao(btnDashboard));
-        btnProfessores.addActionListener(e -> ativarBotao(btnProfessores));
+
+        btnProfessores.addActionListener(e -> {
+            ativarBotao(btnProfessores);
+            contentPanel.mostrarProfessor();
+        });
+
         btnDisciplinas.addActionListener(e -> {
             ativarBotao(btnDisciplinas);
             contentPanel.mostrarDisciplina();
         });
-        btnTurmas.addActionListener(e -> ativarBotao(btnTurmas));
+        btnTurmas.addActionListener(e -> {
+            ativarBotao(btnTurmas);
+            contentPanel.mostrarTurma();
+        });
+
         btnTurnos.addActionListener(e -> {
             ativarBotao(btnTurnos);
             contentPanel.mostrarTurno();
