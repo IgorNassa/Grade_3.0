@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS disciplina (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL
+);
