@@ -1,36 +1,21 @@
 package br.sistema.view.panel;
+
 import br.sistema.view.component.MenuButton;
+import br.sistema.view.util.AppTheme;
 import br.sistema.view.util.IconUtil;
-import br.sistema.view.panel.ContentPanel;
+
 import javax.swing.*;
 import java.awt.*;
-import br.sistema.view.theme.ThemeColors;
-import br.sistema.view.theme.ThemeDimensions;
-import br.sistema.view.theme.ThemeFonts;
 
+/**
+ * Sidebar com navegação completa — tema dark consistente com o LoginScreen.
+ */
+public class SidebarPanel extends JPanel {
 
-
-public class SidebarPanel extends  JPanel {
-
-    /* config base*/
-    private static final Color COR_BG = ThemeColors.BACKGROUND;
-    private static final Color COR_TXT = ThemeColors.TEXT_TITLE;
-    private static final Color COR_TXT_SEC = ThemeColors.TEXT_MUTED;
-
+    private static final int LARGURA = 248;
     private final ContentPanel contentPanel;
 
-    public SidebarPanel(ContentPanel contentPanel){
-
-        this.contentPanel = contentPanel;
-
-        configurarSidebar();
-        montarTopo();
-        montarMenu();
-        montarRodape();
-        configurarEventos();
-    }
-
-    //=======BUTTONS=======//
+    // Botões de menu
     private MenuButton btnDashboard;
     private MenuButton btnProfessores;
     private MenuButton btnDisciplinas;
@@ -38,179 +23,185 @@ public class SidebarPanel extends  JPanel {
     private MenuButton btnTurnos;
     private MenuButton btnGerarGrade;
     private MenuButton btnVisualizar;
-    private MenuButton btnConfig;
 
-
-
-
-
-    private void configurarSidebar(){
-
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setPreferredSize(
-                new Dimension(
-                        ThemeDimensions.SIDEBAR_WIDTH,
-                        720
-                )
-        );
-        setBackground(ThemeColors.BACKGROUND);
-
+    public SidebarPanel(ContentPanel contentPanel) {
+        this.contentPanel = contentPanel;
+        configurar();
+        montarTopo();
+        montarMenu();
+        montarRodape();
+        configurarEventos();
     }
 
-    private void montarTopo(){
-        add(Box.createVerticalStrut(20));
+    private void configurar() {
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setPreferredSize(new Dimension(LARGURA, 0));
+        setBackground(AppTheme.BG_SIDEBAR);
+    }
 
-        JLabel lblLogo = new JLabel(
-                IconUtil.carregarIcone(
-                        "/icons/fundoFlavioWarken.png",
-                        56,
-                        56
-                )
-        );
-        lblLogo.setAlignmentX(Component.CENTER_ALIGNMENT);
-        lblLogo.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        lblLogo.setForeground(COR_TXT);
-        lblLogo.setAlignmentX(Component.CENTER_ALIGNMENT);
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        // Linha separadora direita
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setColor(AppTheme.BORDER_COLOR);
+        g2.drawLine(getWidth() - 1, 0, getWidth() - 1, getHeight());
+        g2.dispose();
+    }
 
+    // ── Topo: Logo + Nome ──────────────────────────────────────────────────────
+    private void montarTopo() {
+        add(Box.createVerticalStrut(28));
+
+        // Ícone logo (tenta carregar, usa emoji fallback)
+        JLabel lblLogo = new JLabel();
+        try {
+            lblLogo = new JLabel(IconUtil.carregarIcone("/icons/logo.png", 64, 64));
+        } catch (Exception ignored) {
+            lblLogo = new JLabel("🎓");
+            lblLogo.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
+        }
+        lblLogo.setAlignmentX(Component.CENTER_ALIGNMENT);
         add(lblLogo);
-        add(Box.createVerticalStrut(10));
 
-        JLabel lblEscola = new JLabel("COLÉGIO ESTADUAL");
-        lblEscola.setFont(ThemeFonts.BODY);
-        lblEscola.setForeground(COR_TXT);
-        lblEscola.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(Box.createVerticalStrut(14));
 
         JLabel lblNome = new JLabel("PROF. FLÁVIO WARKEN");
-        lblNome.setFont(ThemeFonts.BODY);
-        lblNome.setForeground(COR_TXT);
+        lblNome.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblNome.setForeground(AppTheme.TEXT_PRIMARY);
         lblNome.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        add(lblEscola);
-        add(Box.createVerticalStrut(4));
         add(lblNome);
+
+        JLabel lblSistema = new JLabel("Sistema de Grade Escolar");
+        lblSistema.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        lblSistema.setForeground(AppTheme.TEXT_MUTED);
+        lblSistema.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(lblSistema);
 
         add(Box.createVerticalStrut(28));
 
-    }
-
-    private void montarMenu (){
-        btnDashboard = new MenuButton(
-                "Dashboard",
-                IconUtil.carregarIcone("/icons/book.png", 24, 24),
-                true
-        );
-
-        add(btnDashboard);
-
-        add(Box.createVerticalStrut(24));
-        add(criarTituloSecao("CADASTROS"));
-
-        btnProfessores = new MenuButton("Professores", IconUtil.carregarIcone("/icons/professor.png", 24, 24), false);
-        add(btnProfessores);
-
-        add(Box.createVerticalStrut(6));
-
-        btnDisciplinas = new MenuButton("Disciplinas", IconUtil.carregarIcone("/icons/disciplinas.png",24, 24),false);
-        add(btnDisciplinas);
-
-        add(Box.createVerticalStrut(6));
-
-        btnTurmas = new MenuButton("Turmas",IconUtil.carregarIcone("/icons/professor.png", 24, 24),false);
-        add(btnTurmas);
-
-        add(Box.createVerticalStrut(6));
-
-        btnTurnos = new MenuButton("Turnos",IconUtil.carregarIcone("/icons/turnos.png", 24, 24), false);
-        add(btnTurnos);
-
+        // Separador
+        JSeparator sep = new JSeparator() {
+            @Override public Dimension getMaximumSize() { return new Dimension(Integer.MAX_VALUE, 1); }
+        };
+        sep.setForeground(AppTheme.BORDER_COLOR);
+        sep.setBackground(AppTheme.BORDER_COLOR);
+        add(sep);
 
         add(Box.createVerticalStrut(16));
-        add(criarTituloSecao("GRADE"));
+    }
 
-
-        btnGerarGrade = new MenuButton("Gerar Grade",IconUtil.carregarIcone("/icons/grade.png", 24, 24),  false);
-        add(btnGerarGrade);
-
-        add(Box.createVerticalStrut(6));
-
-        btnVisualizar = new MenuButton("Visualizar Grade",IconUtil.carregarIcone("/icons/visualizar.png", 24, 24),  false);
-        add(btnVisualizar);
+    // ── Menu ──────────────────────────────────────────────────────────────────
+    private void montarMenu() {
+        // Dashboard
+        btnDashboard = new MenuButton("Dashboard", iconSeguro("/icons/book.png"), true);
+        add(btnDashboard);
 
         add(Box.createVerticalStrut(20));
-        add(criarTituloSecao("CONFIGURAÇÕES"));
+        add(secaoLabel("CADASTROS"));
+        add(Box.createVerticalStrut(4));
 
-       btnConfig = new MenuButton("Configurações", IconUtil.carregarIcone("/icons/config.png", 24, 24), false);
-       add(btnConfig);
+        btnProfessores = new MenuButton("Professores", iconSeguro("/icons/professor.png"), false);
+        add(btnProfessores);
+        add(Box.createVerticalStrut(4));
 
+        btnDisciplinas = new MenuButton("Disciplinas", iconSeguro("/icons/disciplinas.png"), false);
+        add(btnDisciplinas);
+        add(Box.createVerticalStrut(4));
+
+        btnTurmas = new MenuButton("Turmas", iconSeguro("/icons/professor.png"), false);
+        add(btnTurmas);
+        add(Box.createVerticalStrut(4));
+
+        btnTurnos = new MenuButton("Turnos", iconSeguro("/icons/turnos.png"), false);
+        add(btnTurnos);
+
+        add(Box.createVerticalStrut(20));
+        add(secaoLabel("GRADE"));
+        add(Box.createVerticalStrut(4));
+
+        btnGerarGrade = new MenuButton("Gerar Grade", iconSeguro("/icons/grade.png"), false);
+        add(btnGerarGrade);
+        add(Box.createVerticalStrut(4));
+
+        btnVisualizar = new MenuButton("Visualizar Grade", iconSeguro("/icons/visualizar.png"), false);
+        add(btnVisualizar);
     }
 
-    private JLabel criarTituloSecao(String txt){
-        JLabel label = new JLabel(txt);
-
-        label.setFont(ThemeFonts.SMALL);
-        label.setForeground(ThemeColors.TEXT_MUTED);
-
-        label.setHorizontalAlignment(SwingConstants.LEFT);
-        label.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        label.setMaximumSize(new Dimension(215, 28));
-        label.setPreferredSize(new Dimension(215, 28));
-
-        label.setBorder(BorderFactory.createEmptyBorder(0, 14, 0, 0));
-
-        return label;
+    private Icon iconSeguro(String path) {
+        try { return IconUtil.carregarIcone(path, 20, 20); }
+        catch (Exception e) { return null; }
     }
 
-    private void ativarBotao(MenuButton botaoSelecionado){
-
-        btnDashboard.setAtivo(false);
-        btnProfessores.setAtivo(false);
-        btnDisciplinas.setAtivo(false);
-        btnTurmas.setAtivo(false);
-        btnTurnos.setAtivo(false);
-        btnGerarGrade.setAtivo(false);
-        btnVisualizar.setAtivo(false);
-        btnConfig.setAtivo(false);
-
-        botaoSelecionado.setAtivo(true);
+    private JLabel secaoLabel(String texto) {
+        JLabel lbl = new JLabel(texto);
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 10));
+        lbl.setForeground(AppTheme.TEXT_MUTED);
+        lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lbl.setMaximumSize(new Dimension(210, 22));
+        lbl.setPreferredSize(new Dimension(210, 22));
+        lbl.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 0));
+        lbl.setHorizontalAlignment(SwingConstants.LEFT);
+        return lbl;
     }
 
-    private void configurarEventos(){
-        btnDashboard.addActionListener(e -> ativarBotao(btnDashboard));
-
-        btnProfessores.addActionListener(e -> {
-            ativarBotao(btnProfessores);
-            contentPanel.mostrarProfessor();
-        });
-
-        btnDisciplinas.addActionListener(e -> {
-            ativarBotao(btnDisciplinas);
-            contentPanel.mostrarDisciplina();
-        });
-        btnTurmas.addActionListener(e -> {
-            ativarBotao(btnTurmas);
-            contentPanel.mostrarTurma();
-        });
-
-        btnTurnos.addActionListener(e -> {
-            ativarBotao(btnTurnos);
-            contentPanel.mostrarTurno();
-        });
-        btnGerarGrade.addActionListener(e -> ativarBotao(btnGerarGrade));
-        btnVisualizar.addActionListener(e -> ativarBotao(btnVisualizar));
-        btnConfig.addActionListener(e -> ativarBotao(btnConfig));
-    }
-
-    private void montarRodape(){
+    // ── Rodapé ────────────────────────────────────────────────────────────────
+    private void montarRodape() {
         add(Box.createVerticalGlue());
 
-        JLabel lblVersao = new JLabel("SGDG v3.0");
-        lblVersao.setFont(new  Font("Segoe UI", Font.PLAIN, 11));
-        lblVersao.setForeground(COR_TXT_SEC);
-        lblVersao.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JSeparator sep = new JSeparator() {
+            @Override public Dimension getMaximumSize() { return new Dimension(Integer.MAX_VALUE, 1); }
+        };
+        sep.setForeground(AppTheme.BORDER_COLOR);
+        add(sep);
 
+        add(Box.createVerticalStrut(12));
+
+        JLabel lblVersao = new JLabel("SGDG v3.0  •  Flávio Warken");
+        lblVersao.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        lblVersao.setForeground(AppTheme.TEXT_MUTED);
+        lblVersao.setAlignmentX(Component.CENTER_ALIGNMENT);
         add(lblVersao);
-        add(Box.createVerticalStrut(18));
+
+        add(Box.createVerticalStrut(16));
     }
 
+    // ── Eventos ───────────────────────────────────────────────────────────────
+    private void configurarEventos() {
+        btnDashboard.addActionListener(e -> {
+            ativar(btnDashboard);
+            contentPanel.mostrar(ContentPanel.DASHBOARD);
+        });
+        btnProfessores.addActionListener(e -> {
+            ativar(btnProfessores);
+            contentPanel.mostrar(ContentPanel.PROFESSORES);
+        });
+        btnDisciplinas.addActionListener(e -> {
+            ativar(btnDisciplinas);
+            contentPanel.mostrar(ContentPanel.DISCIPLINAS);
+        });
+        btnTurmas.addActionListener(e -> {
+            ativar(btnTurmas);
+            contentPanel.mostrar(ContentPanel.TURMAS);
+        });
+        btnTurnos.addActionListener(e -> {
+            ativar(btnTurnos);
+            contentPanel.mostrar(ContentPanel.TURNOS);
+        });
+        btnGerarGrade.addActionListener(e -> {
+            ativar(btnGerarGrade);
+            contentPanel.mostrar(ContentPanel.GERAR_GRADE);
+        });
+        btnVisualizar.addActionListener(e -> {
+            ativar(btnVisualizar);
+            contentPanel.mostrar(ContentPanel.VER_GRADE);
+        });
+    }
+
+    private void ativar(MenuButton botao) {
+        MenuButton[] todos = {btnDashboard, btnProfessores, btnDisciplinas, btnTurmas,
+                              btnTurnos, btnGerarGrade, btnVisualizar};
+        for (MenuButton b : todos) b.setAtivo(false);
+        botao.setAtivo(true);
+    }
 }

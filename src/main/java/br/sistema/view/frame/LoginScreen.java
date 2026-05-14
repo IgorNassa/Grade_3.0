@@ -8,577 +8,573 @@ import java.awt.event.MouseEvent;
 
 public class LoginScreen extends JFrame {
 
-    private final Color BACKGROUND = new Color(12, 12, 18);
-    private final Color CARD = new Color(24, 24, 34, 240);
-    private final Color FIELD = new Color(18, 18, 28);
-    private final Color BORDER = new Color(55, 55, 75);
-    private final Color PURPLE = new Color(108, 92, 231);
-    private final Color TEXT = new Color(210, 210, 220);
+    private final Color BACKGROUND = new Color(18, 18, 22); // Fundo principal da janela
+    private final Color CARD = new Color(34, 30, 52); // Fundo do card esquerdo (roxo escuro)
+    private final Color FIELD = new Color(26, 26, 32); // Fundo dos inputs
+    private final Color BORDER = new Color(60, 60, 75); // Borda sutil
+    private final Color PURPLE = new Color(114, 95, 231); // Cor de destaque principal
+    private final Color TEXT = new Color(230, 230, 235); // Texto primário
+    private final Color TEXT_MUTED = new Color(150, 150, 160); // Texto secundário/placeholder
 
-    // Variaveis para configurar para arrastar uma janela
+    // Variáveis para arrastar a janela
     private int mouseX;
     private int mouseY;
 
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new LoginScreen());
+    }
+
     // Fontes
-
     private Font loadFont(float size, int style) {
-
         try {
-
             Font font = Font.createFont(
                     Font.TRUETYPE_FONT,
-                    getClass().getResourceAsStream("/Fonts/JetBrainsMono-Regular.ttf")
-            );
-
+                    getClass().getResourceAsStream("/Fonts/JetBrainsMono-Regular.ttf"));
             return font.deriveFont(style, size);
-
         } catch (Exception e) {
-
             return new Font("SansSerif", style, (int) size);
         }
     }
 
     public LoginScreen() {
-
         Font font12 = loadFont(12f, Font.PLAIN);
         Font font14 = loadFont(14f, Font.PLAIN);
-        Font fontTitle = loadFont(30f, Font.BOLD);
+        Font fontTitle = loadFont(32f, Font.BOLD);
+        Font fontSubtitle = loadFont(26f, Font.BOLD);
 
-
-        // tira a barra padrão
-
+        // Remove a barra padrão nativa
         setUndecorated(true);
+        setBackground(new Color(0, 0, 0, 0)); // Transparente para cantos arredondados
 
         setTitle("Flavio Warken");
-        setSize(700, 760);
+        setSize(1000, 650); // Ajustado para o layout dividido mais largo
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(false);
 
+        // Painel raiz com bordas arredondadas e sombra/borda sutis
+        JPanel rootPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // painel principal
+                // Fundo escuro do app
+                g2.setColor(BACKGROUND);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
 
+                // Borda sutil em volta de todo o frame
+                g2.setColor(new Color(45, 45, 55));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 30, 30);
 
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(BACKGROUND);
+                g2.dispose();
+            }
+        };
+        rootPanel.setOpaque(false);
 
-        // topbar
+        // Container principal dividindo esquerdo (visual) e direito (form)
+        JPanel contentPanel = new JPanel(new GridBagLayout());
+        contentPanel.setOpaque(false);
 
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.fill = GridBagConstraints.BOTH;
+        gc.weighty = 1.0;
 
+        // --------------------------------------------------------------------------------
+        // //
+        // 1. LADO ESQUERDO (Painel Visual)
+        // --------------------------------------------------------------------------------
+        // //
+        gc.gridx = 0;
+        gc.weightx = 0.45; // Ocupa 45% da largura
+        gc.insets = new Insets(15, 15, 15, 15); // Margens em relação à janela
+
+        RoundedPanel leftPanel = new RoundedPanel(24, CARD) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Gradiente suave sobrepondo o fundo roxo escuro
+                GradientPaint gp = new GradientPaint(0, 0, new Color(114, 95, 231, 60), 0, getHeight(),
+                        new Color(20, 20, 30, 80));
+                g2.setPaint(gp);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 24, 24);
+
+                // Formas abstratas desenhadas dinamicamente simulando as "dunas/montanhas"
+                g2.setColor(new Color(255, 255, 255, 5));
+                g2.fillOval(-150, getHeight() - 250, 500, 500);
+                g2.fillOval(getWidth() - 200, -100, 400, 400);
+
+                g2.dispose();
+            }
+        };
+        leftPanel.setLayout(new GridBagLayout());
+
+        GridBagConstraints leftGc = new GridBagConstraints();
+        leftGc.gridx = 0;
+        leftGc.weightx = 1.0;
+        leftGc.fill = GridBagConstraints.NONE;
+        leftGc.anchor = GridBagConstraints.CENTER;
+
+        // Logo central SVG levemente opaca (com renderização vetorial FlatLaf)
+        try {
+            com.formdev.flatlaf.extras.FlatSVGIcon svgIcon = new com.formdev.flatlaf.extras.FlatSVGIcon(
+                    "icons/fundoFlavioWarken.svg", 400, 400);
+            JLabel logo = new JLabel(svgIcon) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    // Aplica leve opacidade na logo (45%)
+                    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.45f));
+                    super.paintComponent(g2);
+                    g2.dispose();
+                }
+            };
+            leftGc.gridy = 0;
+            leftGc.insets = new Insets(0, 0, 20, 0);
+            leftPanel.add(logo, leftGc);
+        } catch (Exception ignored) {
+        }
+
+        // Nome Flavio Warken centralizado horizontalmente
+        JLabel logoText = new JLabel("Flavio Warken");
+        logoText.setFont(fontTitle); // Usando a fonte grande
+        logoText.setForeground(Color.WHITE);
+        leftGc.gridy = 1;
+        leftGc.insets = new Insets(0, 0, 10, 0);
+        leftPanel.add(logoText, leftGc);
+
+        // Subtítulo centralizado
+        JLabel subtitleLeft = new JLabel("Gerador de Grade Escolar");
+        subtitleLeft.setFont(font14);
+        subtitleLeft.setForeground(new Color(200, 200, 220));
+        leftGc.gridy = 2;
+        leftGc.insets = new Insets(0, 0, 0, 0);
+        leftPanel.add(subtitleLeft, leftGc);
+
+        contentPanel.add(leftPanel, gc);
+
+        // --------------------------------------------------------------------------------
+        // //
+        // 2. LADO DIREITO (Formulário e Controles de Janela)
+        // --------------------------------------------------------------------------------
+        // //
+        gc.gridx = 1;
+        gc.weightx = 0.55;
+        gc.insets = new Insets(0, 0, 0, 0); // Ocupa todo o resto do espaço
+
+        JPanel rightContainer = new JPanel(new BorderLayout());
+        rightContainer.setOpaque(false);
+
+        // Topbar (Apenas minimizar e fechar do lado direito)
         JPanel topBar = new JPanel(new BorderLayout());
+        topBar.setOpaque(false);
+        topBar.setPreferredSize(new Dimension(0, 50));
 
-        topBar.setPreferredSize(new Dimension(0, 42));
-        topBar.setBackground(BACKGROUND);
-
-        // logo e nome
-
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 8));
-        leftPanel.setOpaque(false);
-
-        ImageIcon icon = new ImageIcon(
-                getClass().getResource("/icons/fundoFlavioWarken.png")
-        );
-
-        Image img = icon.getImage().getScaledInstance(
-                22,
-                22,
-                Image.SCALE_SMOOTH
-        );
-
-        JLabel logo = new JLabel(new ImageIcon(img));
-
-        JLabel appName = new JLabel("Flavio Warken");
-        appName.setForeground(Color.WHITE);
-        appName.setFont(font14);
-
-        leftPanel.add(logo);
-        leftPanel.add(appName);
-
-        // botões
-
-
-        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 6));
+        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 15));
         buttonsPanel.setOpaque(false);
 
-        JButton minimizeBtn = new JButton("_");
-        JButton closeBtn = new JButton("x");
+        JButton minimizeBtn = new JButton() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getModel().isRollover() ? Color.WHITE : TEXT_MUTED);
+                g2.setStroke(new BasicStroke(2));
+                int cx = getWidth() / 2;
+                int cy = getHeight() / 2;
+                int r = 6;
+                g2.drawLine(cx - r, cy, cx + r, cy);
+                g2.dispose();
+            }
+        };
+        JButton closeBtn = new JButton() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getModel().isRollover() ? new Color(255, 80, 80) : TEXT_MUTED);
+                g2.setStroke(new BasicStroke(2));
+                int cx = getWidth() / 2;
+                int cy = getHeight() / 2;
+                int r = 6;
+                g2.drawLine(cx - r, cy - r, cx + r, cy + r);
+                g2.drawLine(cx + r, cy - r, cx - r, cy + r);
+                g2.dispose();
+            }
+        };
 
         styleTopButton(minimizeBtn);
         styleTopButton(closeBtn);
 
-        minimizeBtn.addActionListener(e ->
-                setState(JFrame.ICONIFIED)
-        );
-
-        closeBtn.addActionListener(e ->
-                System.exit(0)
-        );
+        minimizeBtn.addActionListener(e -> setState(JFrame.ICONIFIED));
+        closeBtn.addActionListener(e -> System.exit(0));
 
         buttonsPanel.add(minimizeBtn);
         buttonsPanel.add(closeBtn);
-
-        topBar.add(leftPanel, BorderLayout.WEST);
         topBar.add(buttonsPanel, BorderLayout.EAST);
 
+        rightContainer.add(topBar, BorderLayout.NORTH);
 
-        // arrastar janelas
+        // Envoltório para centralizar o formulário no meio da tela direita
+        JPanel formWrapper = new JPanel(new GridBagLayout());
+        formWrapper.setOpaque(false);
 
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setOpaque(false);
+
+        GridBagConstraints rc = new GridBagConstraints();
+        rc.fill = GridBagConstraints.HORIZONTAL;
+        rc.weightx = 1.0;
+        rc.gridx = 0;
+
+        // Título Formulário
+        JLabel formTitle = new JLabel("Acesse sua conta");
+        formTitle.setFont(fontTitle);
+        formTitle.setForeground(Color.WHITE);
+        rc.gridy = 0;
+        rc.insets = new Insets(0, 0, 10, 0);
+        formPanel.add(formTitle, rc);
+
+        // Subtítulo Formulário
+        JLabel formSubtitle = new JLabel("Bem-vindo de volta! Insira seus dados.");
+        formSubtitle.setFont(font14);
+        formSubtitle.setForeground(TEXT_MUTED);
+        rc.gridy = 1;
+        rc.insets = new Insets(0, 0, 45, 0);
+        formPanel.add(formSubtitle, rc);
+
+        // Label Login
+        JLabel loginLabel = new JLabel("Usuário");
+        loginLabel.setFont(font12);
+        loginLabel.setForeground(TEXT);
+        rc.gridy = 2;
+        rc.insets = new Insets(0, 5, 8, 0);
+        formPanel.add(loginLabel, rc);
+
+        // Field Login
+        RoundedTextField loginField = new RoundedTextField("Digite seu usuário");
+        loginField.setFont(font14);
+        rc.gridy = 3;
+        rc.insets = new Insets(0, 0, 20, 0);
+        formPanel.add(loginField, rc);
+
+        // Label Senha
+        JLabel passLabel = new JLabel("Senha");
+        passLabel.setFont(font12);
+        passLabel.setForeground(TEXT);
+        rc.gridy = 4;
+        rc.insets = new Insets(0, 5, 8, 0);
+        formPanel.add(passLabel, rc);
+
+        // Field Senha
+        RoundedPasswordField passField = new RoundedPasswordField("Digite sua senha");
+        passField.setFont(font14);
+        rc.gridy = 5;
+        rc.insets = new Insets(0, 0, 45, 0);
+        formPanel.add(passField, rc);
+
+        // Botão Entrar
+        RoundedButton btn = new RoundedButton("Entrar");
+        btn.setFont(font14.deriveFont(Font.BOLD));
+        rc.gridy = 6;
+        rc.insets = new Insets(0, 0, 0, 0);
+        formPanel.add(btn, rc);
+
+        // Ação de Login (Enter nos campos ou clique no botão)
+        java.awt.event.ActionListener loginAction = e -> {
+            String user = loginField.getText().trim();
+            String pass = new String(passField.getPassword()).trim();
+
+            if ((user.equals("admin") && pass.equals("1234")) ||
+                (user.equals("flavio") && pass.equals("1234"))) {
+                dispose();
+                new DashFrame();
+            } else {
+                loginField.setErrorState(true);
+                passField.setErrorState(true);
+                shakeWindow();
+            }
+        };
+        btn.addActionListener(loginAction);
+        loginField.addActionListener(loginAction);
+        passField.addActionListener(loginAction);
+
+        // Centraliza e adiciona o formPanel no wrapper
+        formWrapper.add(formPanel);
+        rightContainer.add(formWrapper, BorderLayout.CENTER);
+
+        contentPanel.add(rightContainer, gc);
+
+        rootPanel.add(contentPanel, BorderLayout.CENTER);
+        setContentPane(rootPanel);
+
+        // Arrastar a janela usando qualquer área vazia do painel
         MouseAdapter drag = new MouseAdapter() {
-
             @Override
             public void mousePressed(MouseEvent e) {
-
                 mouseX = e.getX();
                 mouseY = e.getY();
             }
 
             @Override
             public void mouseDragged(MouseEvent e) {
-
-                setLocation(
-                        e.getXOnScreen() - mouseX,
-                        e.getYOnScreen() - mouseY
-                );
+                setLocation(e.getXOnScreen() - mouseX, e.getYOnScreen() - mouseY);
             }
         };
-
+        rootPanel.addMouseListener(drag);
+        rootPanel.addMouseMotionListener(drag);
         topBar.addMouseListener(drag);
         topBar.addMouseMotionListener(drag);
-
-        // fundo
-
-        JPanel background = new JPanel(new GridBagLayout());
-        background.setBackground(BACKGROUND);
-
-        // card
-
-        RoundedPanel card = new RoundedPanel(40, CARD);
-
-        card.setPreferredSize(new Dimension(470, 620));
-
-        card.setLayout(new GridBagLayout());
-
-        card.setBorder(new EmptyBorder(40, 35, 40, 35));
-
-        GridBagConstraints c = new GridBagConstraints();
-
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.gridx = 0;
-        c.weightx = 1;
-
-        // logo central
-
-        ImageIcon logoIcon = new ImageIcon(
-                getClass().getResource("/icons/fundoFlavioWarken.png")
-        );
-
-        Image image = logoIcon.getImage().getScaledInstance(
-                230,
-                230,
-                Image.SCALE_SMOOTH
-        );
-
-        JLabel centerLogo = new JLabel(new ImageIcon(image)) {
-
-            @Override
-            protected void paintComponent(Graphics g) {
-
-                Graphics2D g2 = (Graphics2D) g.create();
-
-                g2.setComposite(
-                        AlphaComposite.getInstance(
-                                AlphaComposite.SRC_OVER,
-                                0.18f
-                        )
-                );
-
-                super.paintComponent(g2);
-
-                g2.dispose();
-            }
-        };
-
-        centerLogo.setHorizontalAlignment(SwingConstants.CENTER);
-
-        c.gridy = 0;
-        c.insets = new Insets(-20, 0, -170, 0);
-
-        card.add(centerLogo, c);
-
-        // Titulo
-
-        JLabel title = new JLabel(
-                "Flavio Warken",
-                SwingConstants.CENTER
-        );
-
-        title.setFont(fontTitle);
-
-        title.setForeground(new Color(245, 240, 255));
-
-        c.gridy = 1;
-
-        c.insets = new Insets(40, 0, 0, 0);
-
-        card.add(title, c);
-
-        // subtitulo
-
-        JLabel subtitle = new JLabel(
-                "Gerador de Grade Escolar",
-                SwingConstants.CENTER
-        );
-
-        subtitle.setFont(font14);
-
-        subtitle.setForeground(new Color(150, 150, 170));
-
-        c.gridy = 2;
-
-        c.insets = new Insets(10, 0, 35, 0);
-
-        card.add(subtitle, c);
-
-        // login label
-
-        JLabel loginLabel = new JLabel("Login");
-
-        loginLabel.setFont(font14);
-
-        loginLabel.setForeground(TEXT);
-
-        c.gridy = 3;
-
-        c.insets = new Insets(0, 0, 8, 0);
-
-        card.add(loginLabel, c);
-
-        // login field
-
-        RoundedTextField loginField = new RoundedTextField(" Digite seu login");
-
-        loginField.setFont(font14);
-
-        c.gridy = 4;
-
-        c.insets = new Insets(0, 0, 22, 0);
-
-        card.add(loginField, c);
-
-
-        // senha label
-
-        JLabel passLabel = new JLabel("Senha");
-
-        passLabel.setFont(font14);
-
-        passLabel.setForeground(TEXT);
-
-        c.gridy = 5;
-
-        c.insets = new Insets(0, 0, 8, 0);
-
-        card.add(passLabel, c);
-
-        // senha field
-
-        RoundedPasswordField passField = new RoundedPasswordField(" Digite sua Senha");
-
-        passField.setFont(font14);
-
-        c.gridy = 6;
-
-        c.insets = new Insets(0, 0, 35, 0);
-
-        card.add(passField, c);
-
-        // botao
-
-        RoundedButton btn = new RoundedButton("Entrar");
-
-        btn.setFont(font14);
-
-        c.gridy = 7;
-
-        c.insets = new Insets(0, 0, 0, 0);
-
-        card.add(btn, c);
-
-        background.add(card);
-
-        // Adiciona tudo
-
-        mainPanel.add(topBar, BorderLayout.NORTH);
-        mainPanel.add(background, BorderLayout.CENTER);
-
-        setContentPane(mainPanel);
 
         setVisible(true);
     }
 
-
-    // estilo botões topbar
-
+    // Estilo dos botões da topbar
     private void styleTopButton(JButton button) {
-
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setContentAreaFilled(false);
-        button.setForeground(Color.WHITE);
+        button.setForeground(TEXT_MUTED);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setFont(new Font("Arial", Font.BOLD, 16));
-        button.setPreferredSize(new Dimension(42, 28));
+        button.setFont(new Font("SansSerif", Font.BOLD, 18));
+        button.setPreferredSize(new Dimension(45, 30));
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setForeground(Color.WHITE);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setForeground(TEXT_MUTED);
+            }
+        });
     }
 
-    // Text field
+    // Animação de tremor na janela quando o login falha
+    private void shakeWindow() {
+        Point o = getLocation();
+        Timer t = new Timer(30, null);
+        t.addActionListener(new java.awt.event.ActionListener() {
+            int c = 0;
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (c % 2 == 0) setLocation(o.x + 10, o.y);
+                else setLocation(o.x - 10, o.y);
+                c++;
+                if (c > 8) {
+                    t.stop();
+                    setLocation(o);
+                }
+            }
+        });
+        t.start();
+    }
 
+    // Text field com cantos arredondados, focus state e placeholder puro
     class RoundedTextField extends JTextField {
-
         private final String placeholder;
+        private boolean errorState = false;
+
+        public void setErrorState(boolean errorState) {
+            this.errorState = errorState;
+            repaint();
+        }
 
         public RoundedTextField(String placeholder) {
-
             this.placeholder = placeholder;
-
-            setPreferredSize(new Dimension(380, 52));
-
+            setPreferredSize(new Dimension(340, 50));
             setOpaque(false);
-
             setBorder(new EmptyBorder(0, 18, 0, 18));
-
             setForeground(Color.WHITE);
-
             setCaretColor(Color.WHITE);
+
+            addFocusListener(new java.awt.event.FocusAdapter() {
+                public void focusGained(java.awt.event.FocusEvent evt) {
+                    repaint();
+                }
+
+                public void focusLost(java.awt.event.FocusEvent evt) {
+                    repaint();
+                }
+            });
+
+            addKeyListener(new java.awt.event.KeyAdapter() {
+                public void keyPressed(java.awt.event.KeyEvent evt) {
+                    setErrorState(false);
+                }
+            });
         }
 
         @Override
         protected void paintComponent(Graphics g) {
-
             Graphics2D g2 = (Graphics2D) g.create();
-
-            g2.setRenderingHint(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON
-            );
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             g2.setColor(FIELD);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
 
-            g2.fillRoundRect(
-                    0,
-                    0,
-                    getWidth(),
-                    getHeight(),
-                    32,
-                    32
-            );
-
-            g2.setColor(BORDER);
-
-            g2.drawRoundRect(
-                    0,
-                    0,
-                    getWidth() - 1,
-                    getHeight() - 1,
-                    32,
-                    32
-            );
-
+            if (errorState) {
+                g2.setColor(new Color(255, 80, 80));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+            } else if (isFocusOwner()) {
+                g2.setColor(PURPLE);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+            } else {
+                g2.setColor(BORDER);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+            }
             g2.dispose();
 
             super.paintComponent(g);
 
-            // PLACEHOLDER
             if (getText().isEmpty() && !isFocusOwner()) {
-
                 Graphics2D gPlaceholder = (Graphics2D) g.create();
-
-                gPlaceholder.setRenderingHint(
-                        RenderingHints.KEY_TEXT_ANTIALIASING,
-                        RenderingHints.VALUE_TEXT_ANTIALIAS_ON
-                );
-
-                gPlaceholder.setColor(new Color(140, 140, 160));
-
+                gPlaceholder.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                        RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                gPlaceholder.setColor(TEXT_MUTED);
                 gPlaceholder.setFont(getFont());
-
-                Insets in = getInsets();
-
                 FontMetrics fm = gPlaceholder.getFontMetrics();
-
-                gPlaceholder.drawString(
-                        placeholder,
-                        in.left,
-                        (getHeight() + fm.getAscent()) / 2 - 4
-                );
-
+                gPlaceholder.drawString(placeholder, getInsets().left, (getHeight() + fm.getAscent()) / 2 - 4);
                 gPlaceholder.dispose();
             }
         }
     }
 
-    // senha field
-
+    // Password field com as mesmas propriedades estéticas
     class RoundedPasswordField extends JPasswordField {
-
         private final String placeholder;
+        private boolean errorState = false;
+
+        public void setErrorState(boolean errorState) {
+            this.errorState = errorState;
+            repaint();
+        }
 
         public RoundedPasswordField(String placeholder) {
-
             this.placeholder = placeholder;
-
-            setPreferredSize(new Dimension(380, 52));
-
+            setPreferredSize(new Dimension(340, 50));
             setOpaque(false);
-
             setBorder(new EmptyBorder(0, 18, 0, 18));
-
             setForeground(Color.WHITE);
-
             setCaretColor(Color.WHITE);
+
+            addFocusListener(new java.awt.event.FocusAdapter() {
+                public void focusGained(java.awt.event.FocusEvent evt) {
+                    repaint();
+                }
+
+                public void focusLost(java.awt.event.FocusEvent evt) {
+                    repaint();
+                }
+            });
+
+            addKeyListener(new java.awt.event.KeyAdapter() {
+                public void keyPressed(java.awt.event.KeyEvent evt) {
+                    setErrorState(false);
+                }
+            });
         }
 
         @Override
         protected void paintComponent(Graphics g) {
-
             Graphics2D g2 = (Graphics2D) g.create();
-
-            g2.setRenderingHint(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON
-            );
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             g2.setColor(FIELD);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
 
-            g2.fillRoundRect(
-                    0,
-                    0,
-                    getWidth(),
-                    getHeight(),
-                    32,
-                    32
-            );
-
-            g2.setColor(BORDER);
-
-            g2.drawRoundRect(
-                    0,
-                    0,
-                    getWidth() - 1,
-                    getHeight() - 1,
-                    32,
-                    32
-            );
-
+            if (errorState) {
+                g2.setColor(new Color(255, 80, 80));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+            } else if (isFocusOwner()) {
+                g2.setColor(PURPLE);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+            } else {
+                g2.setColor(BORDER);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+            }
             g2.dispose();
 
             super.paintComponent(g);
 
-            // PLACEHOLDER
             if (getPassword().length == 0 && !isFocusOwner()) {
-
                 Graphics2D gPlaceholder = (Graphics2D) g.create();
-
-                gPlaceholder.setRenderingHint(
-                        RenderingHints.KEY_TEXT_ANTIALIASING,
-                        RenderingHints.VALUE_TEXT_ANTIALIAS_ON
-                );
-
-                gPlaceholder.setColor(new Color(140, 140, 160));
-
+                gPlaceholder.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                        RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                gPlaceholder.setColor(TEXT_MUTED);
                 gPlaceholder.setFont(getFont());
-
-                Insets in = getInsets();
-
                 FontMetrics fm = gPlaceholder.getFontMetrics();
-
-                gPlaceholder.drawString(
-                        placeholder,
-                        in.left,
-                        (getHeight() + fm.getAscent()) / 2 - 4
-                );
-
+                gPlaceholder.drawString(placeholder, getInsets().left, (getHeight() + fm.getAscent()) / 2 - 4);
                 gPlaceholder.dispose();
             }
         }
     }
 
-
-    // Card
-
+    // Painel com cantos arredondados base
     class RoundedPanel extends JPanel {
-
         private final int radius;
         private final Color color;
 
         public RoundedPanel(int radius, Color color) {
-
             this.radius = radius;
             this.color = color;
-
             setOpaque(false);
         }
 
         @Override
         protected void paintComponent(Graphics g) {
-
             Graphics2D g2 = (Graphics2D) g.create();
-
-            g2.setRenderingHint(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON
-            );
-
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setColor(color);
-
-            g2.fillRoundRect(
-                    0,
-                    0,
-                    getWidth(),
-                    getHeight(),
-                    radius,
-                    radius
-            );
-
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
             g2.dispose();
-
             super.paintComponent(g);
         }
     }
 
-    // Botao
-
+    // Botão com efeitos Hover e Pressed
     class RoundedButton extends JButton {
-
         private boolean hover = false;
+        private boolean pressed = false;
 
         public RoundedButton(String text) {
-
             super(text);
-
-            setPreferredSize(new Dimension(380, 52));
-
+            setPreferredSize(new Dimension(340, 50));
             setFocusPainted(false);
-
             setContentAreaFilled(false);
-
             setBorderPainted(false);
-
             setForeground(Color.WHITE);
-
             setCursor(new Cursor(Cursor.HAND_CURSOR));
-            addMouseListener(new java.awt.event.MouseAdapter() {
 
+            addMouseListener(new MouseAdapter() {
                 @Override
-                public void mouseEntered(java.awt.event.MouseEvent e) {
-
+                public void mouseEntered(MouseEvent e) {
                     hover = true;
                     repaint();
                 }
 
                 @Override
-                public void mouseExited(java.awt.event.MouseEvent e) {
-
+                public void mouseExited(MouseEvent e) {
                     hover = false;
+                    pressed = false;
+                    repaint();
+                }
+
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    pressed = true;
+                    repaint();
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    pressed = false;
                     repaint();
                 }
             });
@@ -586,65 +582,22 @@ public class LoginScreen extends JFrame {
 
         @Override
         protected void paintComponent(Graphics g) {
-
             Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            g2.setRenderingHint(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON
-            );
+            // Transição de cores nos estados
+            if (pressed) {
+                g2.setColor(PURPLE.darker());
+            } else if (hover) {
+                g2.setColor(PURPLE.brighter());
+            } else {
+                g2.setColor(PURPLE);
+            }
 
-            Color start = hover
-                    ? new Color(98, 72, 200)
-                    : new Color(138, 92, 246);
-
-            Color end = hover
-                    ? new Color(78, 62, 180)
-                    : new Color(108, 92, 231);
-
-            GradientPaint gradient = new GradientPaint(
-                    0,
-                    0,
-                    start,
-                    getWidth(),
-                    getHeight(),
-                    end
-            );
-
-            g2.setPaint(gradient);
-
-            g2.fillRoundRect(
-                    0,
-                    0,
-                    getWidth(),
-                    getHeight(),
-                    32,
-                    32
-            );
-
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
             g2.dispose();
 
             super.paintComponent(g);
         }
     }
-
-
-   /* // Chamando a main
-
-    public static void main(String[] args) {
-
-        SwingUtilities.invokeLater(() -> {
-
-            try {
-
-                UIManager.setLookAndFeel(
-                        UIManager.getSystemLookAndFeelClassName()
-                );
-
-            } catch (Exception ignored) {
-            }
-
-            new LoginScreen();
-        });
-    }*/
 }

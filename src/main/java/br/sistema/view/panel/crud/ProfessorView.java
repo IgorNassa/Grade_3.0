@@ -1,80 +1,330 @@
 package br.sistema.view.panel.crud;
 
-    import javax.swing.*;
-    import java.awt.*;
+import br.sistema.view.util.AppTheme;
 
+import javax.swing.*;
+import javax.swing.border.*;
+import javax.swing.table.*;
+import java.awt.*;
+import java.awt.event.*;
 
+public class ProfessorView extends JPanel {
 
-public class ProfessorView extends  BaseCrudPanel{
+    private final DefaultTableModel model;
+    private final JTable tabela;
+    private int linhaSelecionada = -1;
 
-    public ProfessorView(){
-        super();
+    private JPanel painelFormulario;
+    private JTextField txtNome;
+    private JTextField txtDisciplinas;
+    private JLabel lblFormTitulo;
 
-        montarHeader();
-        montarFormulario();
-        montarBotoes();
-        montarTabela();
+    public ProfessorView() {
+        setLayout(new BorderLayout());
+        setBackground(AppTheme.BG_CONTENT);
+        setBorder(new EmptyBorder(32, 32, 32, 32));
 
-    }
-
-    private void montarHeader(){
-        painelHeader.setLayout(new BorderLayout());
-        painelHeader.setBackground(new Color(245, 247, 250));
-
-        JLabel titulo = new JLabel("CADASTRO PROFESSOR");
-        titulo.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        titulo.setForeground(new Color(29, 19, 60));
-        titulo.setBorder(BorderFactory.createEmptyBorder(20, 24, 0, 0));
-
-            painelHeader.add(titulo, BorderLayout.WEST);
-
-    }
-
-    private void montarFormulario(){
-        painelFormulario.setLayout(new FlowLayout(FlowLayout.LEFT, 16, 24));
-        painelFormulario.setBackground(new Color(245, 247, 250));
-
-        painelFormulario.add(new JLabel("NOME"));
-        painelFormulario.add(new JTextField(20));
-
-        painelFormulario.add(new JLabel("Disciplina"));
-        painelFormulario.add(new JComboBox<>(new String[]{
-            "MATEMATICA",
-            "Portugues",
-            "Historia",
-            "Geografia"
-        }));
-
-    }
-
-    private void montarBotoes(){
-        painelBotoes.setLayout(new FlowLayout(FlowLayout.LEFT, 16, 8));
-        painelBotoes.setBackground(new Color(245, 247, 250));
-
-        painelBotoes.add(new JButton("Salvar"));
-        painelBotoes.add(new JButton("Editar"));
-        painelBotoes.add(new JButton("Excluir"));
-        painelBotoes.add(new JButton("Limpar"));
-    }
-
-    private void montarTabela(){
-
-        painelTabela.setLayout(new BorderLayout());
-
-        String[] colunas = {
-                "ID",
-                "Nome",
-                "Disciplina"
+        model = new DefaultTableModel(new String[]{"ID", "Professor", "Disciplinas", "Status"}, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+            @Override public Class<?> getColumnClass(int c) { return c == 0 ? Integer.class : String.class; }
         };
 
-        Object[][] dados = {
-                {1, "Ana Souza", "Matemática"},
-                {2, "Carlos Lima", "História"}
+        tabela = buildTable();
+
+        add(buildHeader(), BorderLayout.NORTH);
+        add(buildBody(),   BorderLayout.CENTER);
+        seedData();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HEADER
+    // ─────────────────────────────────────────────────────────────────────────
+    private JPanel buildHeader() {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setOpaque(false);
+        p.setBorder(new EmptyBorder(0, 0, 24, 0));
+
+        JLabel titulo = AppTheme.sectionTitle("Professores");
+        JLabel sub = AppTheme.label("Gestão de professores e suas respectivas disciplinas lecionadas.");
+        sub.setBorder(new EmptyBorder(4, 0, 0, 0));
+
+        JPanel txt = new JPanel();
+        txt.setOpaque(false);
+        txt.setLayout(new BoxLayout(txt, BoxLayout.Y_AXIS));
+        txt.add(titulo);
+        txt.add(sub);
+        p.add(txt, BorderLayout.WEST);
+
+        JButton btnNovo = AppTheme.primaryButton("+ Cadastrar Professor");
+        btnNovo.setPreferredSize(new Dimension(180, 40));
+        btnNovo.addActionListener(e -> abrirFormularioNovo());
+        
+        JPanel painelAcao = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 8));
+        painelAcao.setOpaque(false);
+        painelAcao.add(btnNovo);
+        p.add(painelAcao, BorderLayout.EAST);
+
+        return p;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // BODY
+    // ─────────────────────────────────────────────────────────────────────────
+    private JPanel buildBody() {
+        JPanel body = new JPanel(new BorderLayout(0, 20));
+        body.setOpaque(false);
+
+        painelFormulario = buildForm();
+        painelFormulario.setVisible(false); // Inicialmente oculto
+
+        body.add(painelFormulario,  BorderLayout.NORTH);
+        body.add(buildTablePanel(), BorderLayout.CENTER);
+        return body;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // FORMULÁRIO (Exibido sob demanda)
+    // ─────────────────────────────────────────────────────────────────────────
+    private JPanel buildForm() {
+        JPanel card = AppTheme.cardPanel(new GridBagLayout());
+        card.setBorder(new EmptyBorder(20, 24, 20, 24));
+
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.anchor = GridBagConstraints.WEST;
+        gc.fill   = GridBagConstraints.HORIZONTAL;
+        gc.insets = new Insets(0, 0, 12, 14);
+
+        // Título do formulário
+        lblFormTitulo = new JLabel("Cadastrar Novo Professor");
+        lblFormTitulo.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblFormTitulo.setForeground(AppTheme.TEXT_PRIMARY);
+        gc.gridy = 0; gc.gridx = 0; gc.gridwidth = 5;
+        card.add(lblFormTitulo, gc);
+
+        // Labels row
+        gc.gridy = 1; gc.gridwidth = 1; gc.insets = new Insets(0, 0, 4, 14);
+        gc.gridx = 0; gc.weightx = 0;   card.add(AppTheme.label("Nome do Professor"), gc);
+        gc.gridx = 1; gc.weightx = 0;   card.add(AppTheme.label("Disciplinas (separadas por vírgula)"), gc);
+
+        // Fields row
+        gc.gridy = 2; gc.insets = new Insets(0, 0, 0, 14);
+        gc.gridx = 0; gc.weightx = 0.40;
+        txtNome = AppTheme.styledField("Ex: João Silva", 240);
+        card.add(txtNome, gc);
+
+        gc.gridx = 1; gc.weightx = 0.60;
+        txtDisciplinas = AppTheme.styledField("Ex: Matemática, Física", 340);
+        card.add(txtDisciplinas, gc);
+
+        JButton btnSalvar   = AppTheme.primaryButton("Salvar");
+        JButton btnCancelar = AppTheme.secondaryButton("Cancelar");
+        JButton btnExcluir  = AppTheme.dangerButton("Excluir");
+
+        btnSalvar.addActionListener(e -> salvar());
+        btnCancelar.addActionListener(e -> fecharFormulario());
+        btnExcluir.addActionListener(e -> excluir());
+
+        gc.gridx = 2; gc.weightx = 0; card.add(btnSalvar,   gc);
+        gc.gridx = 3;                  card.add(btnCancelar, gc);
+        gc.gridx = 4;                  card.add(btnExcluir,  gc);
+
+        return card;
+    }
+
+    private void abrirFormularioNovo() {
+        linhaSelecionada = -1;
+        lblFormTitulo.setText("Cadastrar Novo Professor");
+        txtNome.setText("");
+        txtDisciplinas.setText("");
+        tabela.clearSelection();
+        painelFormulario.setVisible(true);
+        revalidate();
+        repaint();
+        txtNome.requestFocus();
+    }
+
+    private void abrirFormularioEdicao(int row) {
+        linhaSelecionada = row;
+        lblFormTitulo.setText("Editar Professor: ID " + model.getValueAt(row, 0));
+        txtNome.setText((String) model.getValueAt(row, 1));
+        txtDisciplinas.setText((String) model.getValueAt(row, 2));
+        painelFormulario.setVisible(true);
+        revalidate();
+        repaint();
+    }
+
+    private void fecharFormulario() {
+        painelFormulario.setVisible(false);
+        linhaSelecionada = -1;
+        txtNome.setText("");
+        txtDisciplinas.setText("");
+        tabela.clearSelection();
+        revalidate();
+        repaint();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TABELA CONTAINER
+    // ─────────────────────────────────────────────────────────────────────────
+    private JPanel buildTablePanel() {
+        JPanel card = AppTheme.cardPanel(new BorderLayout());
+
+        // ── Toolbar ──────────────────────────────────────────────────────────
+        JPanel toolbar = new JPanel(new BorderLayout());
+        toolbar.setOpaque(false);
+        toolbar.setBorder(new EmptyBorder(16, 20, 14, 20));
+
+        JLabel tit = new JLabel("Lista de Professores");
+        tit.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        tit.setForeground(AppTheme.TEXT_PRIMARY);
+
+        toolbar.add(tit, BorderLayout.WEST);
+        card.add(toolbar, BorderLayout.NORTH);
+
+        // Separador
+        JSeparator sep = new JSeparator();
+        sep.setForeground(AppTheme.BORDER_COLOR);
+        sep.setBackground(AppTheme.BORDER_COLOR);
+
+        // Scroll
+        JScrollPane scroll = new JScrollPane(tabela);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setBackground(AppTheme.BG_CARD);
+        scroll.setBackground(AppTheme.BG_CARD);
+        scroll.getVerticalScrollBar().setUI(new javax.swing.plaf.basic.BasicScrollBarUI() {
+            @Override protected void configureScrollBarColors() {
+                thumbColor = AppTheme.PURPLE_SUBTLE;
+                trackColor = AppTheme.BG_CARD;
+            }
+            @Override protected JButton createDecreaseButton(int o) { return invisibleBtn(); }
+            @Override protected JButton createIncreaseButton(int o) { return invisibleBtn(); }
+            JButton invisibleBtn() {
+                JButton b = new JButton(); b.setPreferredSize(new Dimension(0, 0)); return b;
+            }
+        });
+
+        JPanel containerCentral = new JPanel(new BorderLayout());
+        containerCentral.setOpaque(false);
+        containerCentral.add(sep, BorderLayout.NORTH);
+        containerCentral.add(scroll, BorderLayout.CENTER);
+
+        card.add(containerCentral, BorderLayout.CENTER);
+        return card;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TABELA (Layout Clean e Elegante)
+    // ─────────────────────────────────────────────────────────────────────────
+    private JTable buildTable() {
+        JTable t = new JTable(model) {
+            @Override public Component prepareRenderer(TableCellRenderer r, int row, int col) {
+                Component c = super.prepareRenderer(r, row, col);
+                boolean sel = isRowSelected(row);
+                Color bg = sel ? AppTheme.BG_TABLE_SEL
+                         : row % 2 == 0 ? AppTheme.BG_TABLE_ROW : AppTheme.BG_TABLE_ALT;
+                c.setBackground(bg);
+                c.setForeground(sel ? Color.WHITE : AppTheme.TEXT_PRIMARY);
+                return c;
+            }
         };
 
-        JTable tabela = new JTable(dados, colunas);
+        t.setRowHeight(46);
+        t.setShowGrid(false);
+        t.setIntercellSpacing(new Dimension(0, 0));
+        t.setBackground(AppTheme.BG_TABLE_ROW);
+        t.setForeground(AppTheme.TEXT_PRIMARY);
+        t.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        t.setFillsViewportHeight(true);
+        t.setSelectionBackground(AppTheme.BG_TABLE_SEL);
 
-        painelTabela.add(new JScrollPane(tabela), BorderLayout.CENTER);
+        // Header
+        JTableHeader h = t.getTableHeader();
+        h.setReorderingAllowed(false);
+        h.setBackground(AppTheme.BG_CARD);
+        h.setForeground(AppTheme.TEXT_SECONDARY);
+        h.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        h.setPreferredSize(new Dimension(0, 40));
+        h.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.BORDER_COLOR));
 
+        // Coluna ID
+        t.getColumnModel().getColumn(0).setPreferredWidth(60);
+        t.getColumnModel().getColumn(0).setMaxWidth(80);
+
+        // Coluna Status
+        t.getColumnModel().getColumn(3).setPreferredWidth(100);
+        t.getColumnModel().getColumn(3).setMaxWidth(120);
+
+        t.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                int row = t.getSelectedRow();
+                if (row >= 0) {
+                    abrirFormularioEdicao(row);
+                }
+            }
+        });
+
+        return t;
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // AÇÕES
+    // ─────────────────────────────────────────────────────────────────────────
+    private void salvar() {
+        String nome = txtNome.getText().trim();
+        String disc = txtDisciplinas.getText().trim();
+        if (nome.isEmpty()) { erro("O nome do professor é obrigatório."); return; }
+        if (linhaSelecionada >= 0) {
+            model.setValueAt(nome, linhaSelecionada, 1);
+            model.setValueAt(disc, linhaSelecionada, 2);
+            ok("Professor atualizado com sucesso!");
+        } else {
+            for (int i = 0; i < model.getRowCount(); i++) {
+                if (nome.equalsIgnoreCase((String) model.getValueAt(i, 1))) { 
+                    erro("Professor já cadastrado."); 
+                    return; 
+                }
+            }
+            int novoId = model.getRowCount() + 1;
+            model.addRow(new Object[]{novoId, nome, disc, "Ativo"});
+            ok("Professor cadastrado com sucesso!");
+        }
+        fecharFormulario();
+    }
+
+    private void excluir() {
+        int row = tabela.getSelectedRow();
+        if (row < 0) { erro("Selecione um professor na tabela."); return; }
+        String nome = (String) model.getValueAt(row, 1);
+        if (JOptionPane.showConfirmDialog(this, "Excluir o professor \"" + nome + "\"?",
+                "Confirmar Exclusão", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION) {
+            model.removeRow(row);
+            renumerar();
+            fecharFormulario();
+            ok("Professor excluído!");
+        }
+    }
+
+    private void renumerar() {
+        for (int i = 0; i < model.getRowCount(); i++) {
+            model.setValueAt(i + 1, i, 0);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SEMENTE DE DADOS
+    // ─────────────────────────────────────────────────────────────────────────
+    private void seedData() {
+        Object[][] d = {
+            {1, "Carlos Mendes",   "Matemática, Física, Cálculo",   "Ativo"},
+            {2, "Ana Paula Lima",   "Português, Literatura",          "Ativo"},
+            {3, "Roberto Souza",    "História, Geografia, Filosofia", "Ativo"},
+            {4, "Fernanda Rocha",   "Química, Biologia",              "Ativo"},
+            {5, "Lucas Ferreira",   "Inglês, Arte, Música",           "Ativo"},
+            {6, "Mariana Costa",    "Educação Física, Biologia",      "Ativo"},
+        };
+        for (Object[] row : d) model.addRow(row);
+    }
+
+    private void erro(String msg) { JOptionPane.showMessageDialog(this, msg, "Erro",    JOptionPane.ERROR_MESSAGE); }
+    private void ok(String msg)   { JOptionPane.showMessageDialog(this, msg, "Sucesso", JOptionPane.INFORMATION_MESSAGE); }
 }
