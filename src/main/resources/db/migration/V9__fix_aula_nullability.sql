@@ -1,0 +1,2 @@
+ALTER TABLE aula ALTER COLUMN professor_id SET NOT NULL;
+ALTER TABLE aula ALTER COLUMN disciplina_id SET NOT NULL;
