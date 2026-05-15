@@ -1,33 +1,54 @@
 package br.sistema.view.panel.crud;
 
+import br.sistema.controller.dtos.AulaDTO;
+import br.sistema.controller.dtos.DisciplinaDTO;
+import br.sistema.controller.dtos.TurmaDTO;
+import br.sistema.controller.interfaces.AulaController;
+import br.sistema.controller.interfaces.DisciplinaController;
+import br.sistema.controller.interfaces.TurmaController;
+import br.sistema.util.ServiceRegistry;
+import br.sistema.view.panel.ContentPanel;
 import br.sistema.view.util.AppTheme;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.time.DayOfWeek;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-/**
- * Tela de Geração de Grade — permite configurar carga horária e disparar o gerador.
- */
 public class GerarGradeView extends JPanel {
 
-    private JComboBox<String> cmbTurma;
-    private JComboBox<String> cmbTurno;
+    private final TurmaController turmaController;
+    private final DisciplinaController disciplinaController;
+    private final AulaController aulaController;
 
-    // Campos de carga horária por disciplina
-    private final String[] DISCIPLINAS = {
-        "Matemática", "Português", "História", "Geografia",
-        "Física", "Química", "Biologia", "Inglês", "Arte", "Ed. Física"
-    };
-    private final JTextField[] txtCarga = new JTextField[DISCIPLINAS.length];
+    private JComboBox<TurmaDTO> cmbTurma;
+    private JComboBox<String> cmbTurno;
+    private JPanel gridDisciplinas;
+
+    private final Map<DisciplinaDTO, JTextField> campoCargaMap = new LinkedHashMap<>();
 
     public GerarGradeView() {
+        this.turmaController = ServiceRegistry.getInstance().get(TurmaController.class);
+        this.disciplinaController = ServiceRegistry.getInstance().get(DisciplinaController.class);
+        this.aulaController = ServiceRegistry.getInstance().get(AulaController.class);
+
         setLayout(new BorderLayout());
         setBackground(AppTheme.BG_CONTENT);
         setBorder(new EmptyBorder(32, 32, 32, 32));
 
         add(montarTopo(), BorderLayout.NORTH);
         add(montarCorpo(), BorderLayout.CENTER);
+
+        this.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentShown(java.awt.event.ComponentEvent e) {
+                recarregarDados();
+            }
+        });
     }
 
     private JPanel montarTopo() {
@@ -62,7 +83,16 @@ public class GerarGradeView extends JPanel {
         card.setPreferredSize(new Dimension(0, 80));
 
         card.add(AppTheme.label("Turma:"));
-        cmbTurma = AppTheme.styledCombo(new String[]{"1A", "1B", "2A", "2B", "3A"});
+
+        cmbTurma = new JComboBox<>();
+        cmbTurma.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof TurmaDTO turma) setText(turma.nome());
+                return this;
+            }
+        });
         cmbTurma.setPreferredSize(new Dimension(120, 38));
         card.add(cmbTurma);
 
@@ -78,37 +108,16 @@ public class GerarGradeView extends JPanel {
         JPanel card = AppTheme.cardPanel(new BorderLayout());
         card.setBorder(new EmptyBorder(20, 24, 20, 24));
 
-        // Título
         JLabel tituloCard = new JLabel("Carga Horária Semanal (aulas por semana)");
         tituloCard.setFont(new Font("Segoe UI", Font.BOLD, 14));
         tituloCard.setForeground(AppTheme.TEXT_PRIMARY);
         tituloCard.setBorder(new EmptyBorder(0, 0, 16, 0));
         card.add(tituloCard, BorderLayout.NORTH);
 
-        // Grid de disciplinas
-        JPanel grid = new JPanel(new GridLayout(0, 2, 20, 12));
-        grid.setOpaque(false);
+        gridDisciplinas = new JPanel(new GridLayout(0, 2, 20, 12));
+        gridDisciplinas.setOpaque(false);
+        card.add(gridDisciplinas, BorderLayout.CENTER);
 
-        for (int i = 0; i < DISCIPLINAS.length; i++) {
-            JPanel linha = new JPanel(new BorderLayout(12, 0));
-            linha.setOpaque(false);
-
-            JLabel lblDisc = new JLabel(DISCIPLINAS[i]);
-            lblDisc.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-            lblDisc.setForeground(AppTheme.TEXT_PRIMARY);
-            lblDisc.setPreferredSize(new Dimension(180, 38));
-
-            txtCarga[i] = AppTheme.styledField("0", 80);
-            txtCarga[i].setText("2");
-
-            linha.add(lblDisc, BorderLayout.WEST);
-            linha.add(txtCarga[i], BorderLayout.CENTER);
-            grid.add(linha);
-        }
-
-        card.add(grid, BorderLayout.CENTER);
-
-        // Botão gerar
         JPanel rodape = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 16));
         rodape.setOpaque(false);
 
@@ -122,61 +131,96 @@ public class GerarGradeView extends JPanel {
         return card;
     }
 
+    private void recarregarDados() {
+        TurmaDTO selecionada = (TurmaDTO) cmbTurma.getSelectedItem();
+        cmbTurma.removeAllItems();
+        for (TurmaDTO t : turmaController.findAll()) {
+            cmbTurma.addItem(t);
+        }
+        if (selecionada != null) cmbTurma.setSelectedItem(selecionada);
+
+        gridDisciplinas.removeAll();
+        campoCargaMap.clear();
+
+        List<DisciplinaDTO> disciplinasCriadas = disciplinaController.findAll();
+        for (DisciplinaDTO disc : disciplinasCriadas) {
+            JPanel linha = new JPanel(new BorderLayout(12, 0));
+            linha.setOpaque(false);
+
+            JLabel lblDisc = new JLabel(disc.nome());
+            lblDisc.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            lblDisc.setForeground(AppTheme.TEXT_PRIMARY);
+            lblDisc.setPreferredSize(new Dimension(180, 38));
+
+            // Zera o campo por padrão para não gerar lixo aleatório
+            JTextField txtCargaField = AppTheme.styledField("0", 80);
+            campoCargaMap.put(disc, txtCargaField);
+
+            linha.add(lblDisc, BorderLayout.WEST);
+            linha.add(txtCargaField, BorderLayout.CENTER);
+            gridDisciplinas.add(linha);
+        }
+
+        gridDisciplinas.revalidate();
+        gridDisciplinas.repaint();
+    }
+
     private void gerarGrade() {
-        String turma = (String) cmbTurma.getSelectedItem();
+        TurmaDTO turmaSelecionada = (TurmaDTO) cmbTurma.getSelectedItem();
         String turno = (String) cmbTurno.getSelectedItem();
 
-        // Valida carga
+        if (turmaSelecionada == null) {
+            JOptionPane.showMessageDialog(this, "Nenhuma turma selecionada para a operação.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         int totalAulas = 0;
-        for (int i = 0; i < DISCIPLINAS.length; i++) {
+        Map<DisciplinaDTO, Integer> cargaParaGerar = new HashMap<>();
+
+        for (Map.Entry<DisciplinaDTO, JTextField> entry : campoCargaMap.entrySet()) {
+            DisciplinaDTO disc = entry.getKey();
             try {
-                int qtd = Integer.parseInt(txtCarga[i].getText().trim());
+                int qtd = Integer.parseInt(entry.getValue().getText().trim());
                 if (qtd < 0) {
-                    JOptionPane.showMessageDialog(this,
-                        "A carga de \"" + DISCIPLINAS[i] + "\" não pode ser negativa.",
-                        "Erro de Validação", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "A carga de " + disc.nome() + " não pode ser negativa.", "Erro", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                totalAulas += qtd;
+                if (qtd > 0) {
+                    cargaParaGerar.put(disc, qtd);
+                    totalAulas += qtd;
+                }
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this,
-                    "Valor inválido em \"" + DISCIPLINAS[i] + "\". Use apenas números inteiros.",
-                    "Erro de Validação", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Use apenas números inteiros em " + disc.nome(), "Erro", JOptionPane.ERROR_MESSAGE);
                 return;
             }
         }
 
         if (totalAulas == 0) {
-            JOptionPane.showMessageDialog(this,
-                "Defina ao menos uma aula para alguma disciplina.",
-                "Aviso", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Defina ao menos uma aula.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // Simula processamento
-        JDialog loading = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Processando...", true);
-        loading.setUndecorated(true);
-        JPanel panel = new JPanel(new BorderLayout(20, 20));
-        panel.setBackground(AppTheme.BG_CARD);
-        panel.setBorder(new EmptyBorder(30, 40, 30, 40));
-        JLabel msg = new JLabel("⚡ Gerando grade para " + turma + " – " + turno + "...");
-        msg.setForeground(AppTheme.TEXT_PRIMARY);
-        msg.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        panel.add(msg, BorderLayout.CENTER);
-        loading.setContentPane(panel);
-        loading.pack();
-        loading.setLocationRelativeTo(this);
+        if (totalAulas > 25) {
+            JOptionPane.showMessageDialog(this, "A grade comporta no máximo 25 aulas semanais. Reduza a carga.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-        final int totalAulasFinal = totalAulas;
-        Timer timer = new Timer(1800, e -> {
-            loading.dispose();
-            JOptionPane.showMessageDialog(this,
-                "✅ Grade gerada com sucesso!\nTurma: " + turma + "  |  Turno: " + turno +
-                "\nTotal de aulas semanais: " + totalAulasFinal,
+        // --- DELEGA PARA O SEU BACKEND FAZER O TRABALHO PESADO ---
+        try {
+            aulaController.gerarGrade(turmaSelecionada, cargaParaGerar);
+        } catch (Exception ex) {
+            // Vai estourar aqui se não tiver professor, ou se der conflito!
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Falha ao Gerar Grade", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JOptionPane.showMessageDialog(this,
+                "✅ Grade gerada e salva no banco de dados com sucesso!\nTurma: " + turmaSelecionada.nome() + "  |  Total de aulas: " + totalAulas,
                 "Grade Gerada", JOptionPane.INFORMATION_MESSAGE);
-        });
-        timer.setRepeats(false);
-        timer.start();
-        loading.setVisible(true);
+
+        ContentPanel contentPanel = (ContentPanel) SwingUtilities.getAncestorOfClass(ContentPanel.class, this);
+        if (contentPanel != null) {
+            contentPanel.exibirGradeDaTurma(turmaSelecionada);
+        }
     }
 }

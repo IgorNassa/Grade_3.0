@@ -1,36 +1,54 @@
 package br.sistema.view.panel.crud;
 
+import br.sistema.controller.dtos.AulaDTO;
+import br.sistema.controller.dtos.DisciplinaDTO;
+import br.sistema.controller.dtos.TurmaDTO;
+import br.sistema.controller.interfaces.AulaController;
+import br.sistema.controller.interfaces.DisciplinaController;
+import br.sistema.controller.interfaces.TurmaController;
+import br.sistema.util.ServiceRegistry;
 import br.sistema.view.util.AppTheme;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.*;
 import java.awt.*;
-import java.util.Random;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-/**
- * Painel de visualização da Grade Gerada.
- * Exibe uma tabela semanal (Segunda–Sexta) por horário.
- * CORRIGIDO: tabela alinhada à esquerda, sem deslocamento.
- */
 public class GradeView extends JPanel {
 
     private static final String[] DIAS = {"Horário", "Segunda", "Terça", "Quarta", "Quinta", "Sexta"};
-
     private static final String[] SLOTS_MATUTINO = {
             "07:00–07:50", "07:50–08:40", "08:40–09:30", "— Intervalo —", "09:50–10:40", "10:40–11:30"
     };
 
-    private final JComboBox<String> cmbTurma;
+    private final TurmaController turmaController;
+    private final DisciplinaController disciplinaController;
+    private final AulaController aulaController;
+    private final JComboBox<TurmaDTO> cmbTurma;
     private final JComboBox<String> cmbTurno;
     private JScrollPane scrollGrade;
 
     public GradeView() {
+        this.turmaController = ServiceRegistry.getInstance().get(TurmaController.class);
+        this.disciplinaController = ServiceRegistry.getInstance().get(DisciplinaController.class);
+        this.aulaController = ServiceRegistry.getInstance().get(AulaController.class);
+
         setLayout(new BorderLayout(0, 0));
         setBackground(AppTheme.BG_CONTENT);
         setBorder(new EmptyBorder(32, 32, 32, 32));
 
-        cmbTurma = AppTheme.styledCombo(new String[]{"1A", "1B", "2A", "2B", "3A"});
+        cmbTurma = new JComboBox<>();
+        cmbTurma.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof TurmaDTO turma) setText(turma.nome());
+                return this;
+            }
+        });
         cmbTurma.setPreferredSize(new Dimension(120, 38));
 
         cmbTurno = AppTheme.styledCombo(new String[]{"MATUTINO", "VESPERTINO", "NOTURNO"});
@@ -40,6 +58,14 @@ public class GradeView extends JPanel {
 
         scrollGrade = montarScrollGrade();
         add(scrollGrade, BorderLayout.CENTER);
+
+        this.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentShown(java.awt.event.ComponentEvent e) {
+                recarregarListaTurmas();
+                recarregarGrade();
+            }
+        });
     }
 
     private JPanel montarTopo() {
@@ -63,36 +89,35 @@ public class GradeView extends JPanel {
         filtros.add(cmbTurma);
         filtros.add(AppTheme.label("Turno:"));
         filtros.add(cmbTurno);
-        JButton btnFiltrar = AppTheme.primaryButton("Visualizar");
-        btnFiltrar.addActionListener(e -> recarregarGrade());
-        filtros.add(btnFiltrar);
+        JButton btnVisualizar = AppTheme.primaryButton("Visualizar");
+        btnVisualizar.addActionListener(e -> recarregarGrade());
+        filtros.add(btnVisualizar);
 
         painel.add(textos, BorderLayout.WEST);
         painel.add(filtros, BorderLayout.EAST);
         return painel;
     }
 
-    /**
-     * Cria um JScrollPane contendo o card da grade.
-     * O card usa BorderLayout para que a tabela ocupe toda a área disponível.
-     */
+    private void recarregarListaTurmas() {
+        TurmaDTO selecionada = (TurmaDTO) cmbTurma.getSelectedItem();
+        cmbTurma.removeAllItems();
+        for (TurmaDTO t : turmaController.findAll()) {
+            cmbTurma.addItem(t);
+        }
+        if (selecionada != null) cmbTurma.setSelectedItem(selecionada);
+    }
+
     private JScrollPane montarScrollGrade() {
         JPanel card = montarCard();
         JScrollPane scroll = new JScrollPane(card);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.setBackground(AppTheme.BG_CONTENT);
         scroll.getViewport().setBackground(AppTheme.BG_CONTENT);
-        // Garante que o card se expanda até preencher o viewport
         scroll.getViewport().setOpaque(false);
         estilizarScrollBar(scroll);
         return scroll;
     }
 
-    /**
-     * Card com borda arredondada + tabela.
-     * Layout corrigido: BorderLayout garante que o JScrollPane
-     * da tabela preencha todo o espaço sem deslocamento lateral.
-     */
     private JPanel montarCard() {
         JPanel card = new JPanel(new BorderLayout()) {
             @Override
@@ -108,12 +133,14 @@ public class GradeView extends JPanel {
         };
         card.setOpaque(false);
 
-        // Cabeçalho do card
         JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 14));
         header.setOpaque(false);
-        String turma = (String) cmbTurma.getSelectedItem();
+
+        TurmaDTO turma = (TurmaDTO) cmbTurma.getSelectedItem();
+        String nomeTurma = (turma != null) ? turma.nome() : "";
         String turno = (String) cmbTurno.getSelectedItem();
-        JLabel lbl = new JLabel("Grade — Turma " + turma + " | " + turno);
+
+        JLabel lbl = new JLabel("Grade — Turma " + nomeTurma + " | " + turno);
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lbl.setForeground(AppTheme.TEXT_PRIMARY);
         header.add(lbl);
@@ -125,32 +152,57 @@ public class GradeView extends JPanel {
         JPanel topCard = new JPanel(new BorderLayout());
         topCard.setOpaque(false);
         topCard.add(header, BorderLayout.CENTER);
-        topCard.add(sep,    BorderLayout.SOUTH);
+        topCard.add(sep, BorderLayout.SOUTH);
 
         card.add(topCard, BorderLayout.NORTH);
-        card.add(montarTabela(), BorderLayout.CENTER);
+        card.add(montarTabela(turma), BorderLayout.CENTER);
 
         return card;
     }
 
-    private JScrollPane montarTabela() {
-        String[] disciplinas = {
-                "Matemática", "Português", "História", "Física", "Química",
-                "Biologia", "Inglês", "Geografia", "Arte", "Ed. Física"
-        };
-        Random rnd = new Random(42);
-
+    private JScrollPane montarTabela(TurmaDTO turmaSelecionada) {
         DefaultTableModel model = new DefaultTableModel(DIAS, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
 
-        for (String slot : SLOTS_MATUTINO) {
+        // --- LÓGICA DE BUSCA REAL NO BANCO ---
+        String[][] gradeMatrix = new String[5][6]; // [slot 0-4][dia 1-5]
+
+        if (turmaSelecionada != null) {
+            // Cria um dicionário Rápido de ID da Disciplina -> Nome da Disciplina
+            Map<Long, String> discMap = disciplinaController.findAll().stream()
+                    .collect(Collectors.toMap(DisciplinaDTO::id, DisciplinaDTO::nome));
+
+            // Filtra as aulas reais da turma no banco
+            List<AulaDTO> aulas = aulaController.findAll().stream()
+                    .filter(a -> a.turmaId().equals(turmaSelecionada.id()))
+                    .toList();
+
+            // Preenche a matriz nas posições exatas
+            for (AulaDTO aula : aulas) {
+                int dia = aula.diaDaSemana().getValue(); // 1 = Seg, 5 = Sex
+                int slot = aula.slotHorario(); // 0 a 4
+                if (dia >= 1 && dia <= 5 && slot >= 0 && slot <= 4) {
+                    gradeMatrix[slot][dia] = discMap.getOrDefault(aula.disciplinaId(), "Desconhecida");
+                }
+            }
+        }
+
+        // --- CONSTRUÇÃO VISUAL DA TABELA ---
+        int slotDados = 0; // Ponteiro para os slots (0 a 4) ignorando a linha do Intervalo
+
+        for (String slotName : SLOTS_MATUTINO) {
             Object[] row = new Object[6];
-            row[0] = slot;
-            if (slot.contains("Intervalo")) {
+            row[0] = slotName;
+
+            if (slotName.contains("Intervalo")) {
                 for (int d = 1; d <= 5; d++) row[d] = "── Intervalo ──";
             } else {
-                for (int d = 1; d <= 5; d++) row[d] = disciplinas[rnd.nextInt(disciplinas.length)];
+                for (int d = 1; d <= 5; d++) {
+                    String disciplinaDoHorario = gradeMatrix[slotDados][d];
+                    row[d] = (disciplinaDoHorario != null) ? disciplinaDoHorario : "Vago";
+                }
+                slotDados++;
             }
             model.addRow(row);
         }
@@ -160,14 +212,17 @@ public class GradeView extends JPanel {
             public Component prepareRenderer(TableCellRenderer r, int row, int col) {
                 Component c = super.prepareRenderer(r, row, col);
                 String val = String.valueOf(getValueAt(row, col));
+
                 if (col == 0) {
                     c.setBackground(AppTheme.BG_SIDEBAR);
                     c.setForeground(AppTheme.TEXT_SECONDARY);
-                    if (c instanceof JComponent jc)
-                        jc.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                    if (c instanceof JComponent jc) jc.setFont(new Font("Segoe UI", Font.BOLD, 12));
                 } else if (val.contains("Intervalo")) {
                     c.setBackground(new Color(40, 35, 65));
                     c.setForeground(AppTheme.TEXT_MUTED);
+                } else if (val.equals("Vago")) {
+                    c.setBackground(AppTheme.BG_TABLE_ROW); // Fundo normal, mas texto mais apagado
+                    c.setForeground(new Color(120, 120, 140));
                 } else if (isRowSelected(row)) {
                     c.setBackground(AppTheme.BG_TABLE_SEL);
                     c.setForeground(Color.WHITE);
@@ -175,8 +230,7 @@ public class GradeView extends JPanel {
                     c.setBackground(row % 2 == 0 ? AppTheme.BG_TABLE_ROW : AppTheme.BG_TABLE_ALT);
                     c.setForeground(AppTheme.TEXT_PRIMARY);
                 }
-                if (c instanceof JLabel jl)
-                    jl.setHorizontalAlignment(JLabel.CENTER);
+                if (c instanceof JLabel jl) jl.setHorizontalAlignment(JLabel.CENTER);
                 return c;
             }
         };
@@ -233,5 +287,11 @@ public class GradeView extends JPanel {
         parent.add(scrollGrade, BorderLayout.CENTER);
         parent.revalidate();
         parent.repaint();
+    }
+
+    public void focarTurmaERecarregar(TurmaDTO turma) {
+        recarregarListaTurmas();
+        cmbTurma.setSelectedItem(turma);
+        recarregarGrade();
     }
 }
