@@ -20,27 +20,7 @@ public class AulaRepositoryImpl implements AulaRepository {
 
     @Override
     public void save(Aula aula) {
-        boolean transacaoAbertaAqui = false;
-
-        try {
-            if (!em.getTransaction().isActive()) {
-                em.getTransaction().begin();
-                transacaoAbertaAqui = true;
-            }
-
-            em.persist(aula);
-
-            if (transacaoAbertaAqui) {
-                em.getTransaction().commit();
-            }
-
-        } catch (Exception e) {
-            if (transacaoAbertaAqui && em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
-        }
+        em.persist(aula);
     }
 
     @Override
@@ -49,38 +29,18 @@ public class AulaRepositoryImpl implements AulaRepository {
             return;
         }
 
-        boolean transacaoAbertaAqui = false;
+        int batchSize = 50;
 
-        try {
-            if (!em.getTransaction().isActive()) {
-                em.getTransaction().begin();
-                transacaoAbertaAqui = true;
+        for (int i = 0; i < aulas.size(); i++) {
+            em.persist(aulas.get(i));
+
+            if (i > 0 && i % batchSize == 0) {
+                em.flush();
+                em.clear();
             }
-
-            int batchSize = 50;
-
-            for (int i = 0; i < aulas.size(); i++) {
-                em.persist(aulas.get(i));
-
-                if (i > 0 && i % batchSize == 0) {
-                    em.flush();
-                    em.clear();
-                }
-            }
-
-            em.flush();
-
-            if (transacaoAbertaAqui) {
-                em.getTransaction().commit();
-            }
-
-        } catch (Exception e) {
-            if (transacaoAbertaAqui && em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
         }
+
+        em.flush();
     }
 
     @Override
@@ -102,57 +62,17 @@ public class AulaRepositoryImpl implements AulaRepository {
 
     @Override
     public void update(Aula aula) {
-        boolean transacaoAbertaAqui = false;
-
-        try {
-            if (!em.getTransaction().isActive()) {
-                em.getTransaction().begin();
-                transacaoAbertaAqui = true;
-            }
-
-            em.merge(aula);
-
-            if (transacaoAbertaAqui) {
-                em.getTransaction().commit();
-            }
-
-        } catch (Exception e) {
-            if (transacaoAbertaAqui && em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
-        }
+        em.merge(aula);
     }
 
     @Override
     public void delete(Aula aula) {
-        boolean transacaoAbertaAqui = false;
-
-        try {
-            if (aula == null) {
-                throw new IllegalArgumentException("Aula inválida para exclusão.");
-            }
-
-            if (!em.getTransaction().isActive()) {
-                em.getTransaction().begin();
-                transacaoAbertaAqui = true;
-            }
-
-            Aula aulaGerenciada = em.contains(aula) ? aula : em.merge(aula);
-            em.remove(aulaGerenciada);
-
-            if (transacaoAbertaAqui) {
-                em.getTransaction().commit();
-            }
-
-        } catch (Exception e) {
-            if (transacaoAbertaAqui && em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
+        if (aula == null) {
+            throw new IllegalArgumentException("Aula inválida para exclusão.");
         }
+
+        Aula aulaGerenciada = em.contains(aula) ? aula : em.merge(aula);
+        em.remove(aulaGerenciada);
     }
 
     @Override
@@ -189,46 +109,32 @@ public class AulaRepositoryImpl implements AulaRepository {
             return;
         }
 
-        boolean transacaoAbertaAqui = false;
-
-        try {
-            if (!em.getTransaction().isActive()) {
-                em.getTransaction().begin();
-                transacaoAbertaAqui = true;
-            }
-
-            em.createQuery("DELETE FROM Aula a WHERE a.turma = :turma")
-                    .setParameter("turma", turma)
-                    .executeUpdate();
-
-            if (transacaoAbertaAqui) {
-                em.getTransaction().commit();
-            }
-
-        } catch (Exception e) {
-            if (transacaoAbertaAqui && em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
-        }
+        em.createQuery("DELETE FROM Aula a WHERE a.turma = :turma")
+                .setParameter("turma", turma)
+                .executeUpdate();
     }
+
     @Override
-    public boolean professorOcupadoNoBanco(Professor professor, DayOfWeek dia, Integer slot) {
+    public boolean professorOcupadoNoBanco(Professor professor, DayOfWeek dia, Integer slot, Turma turmaAExcluir) {
         if (professor == null || dia == null || slot == null) {
             return false;
         }
 
-        Long count = em.createQuery(
-                        "SELECT COUNT(a) FROM Aula a WHERE a.professor = :professor AND a.diaDaSemana = :dia AND a.slotHorario = :slot",
-                        Long.class
-                )
+        String query = "SELECT COUNT(a) FROM Aula a WHERE a.professor = :professor AND a.diaDaSemana = :dia AND a.slotHorario = :slot";
+        if (turmaAExcluir != null) {
+            query += " AND a.turma <> :turmaExcluir";
+        }
+
+        var q = em.createQuery(query, Long.class)
                 .setParameter("professor", professor)
                 .setParameter("dia", dia)
-                .setParameter("slot", slot)
-                .getSingleResult();
+                .setParameter("slot", slot);
 
-        return count > 0;
+        if (turmaAExcluir != null) {
+            q.setParameter("turmaExcluir", turmaAExcluir);
+        }
+
+        return q.getSingleResult() > 0;
     }
 
     @Override
@@ -238,9 +144,7 @@ public class AulaRepositoryImpl implements AulaRepository {
         }
 
         Long count = em.createQuery(
-                        "SELECT COUNT(a) FROM Aula a WHERE a.turma = :turma AND a.diaDaSemana = :dia AND a.slotHorario = :slot",
-                        Long.class
-                )
+                        "SELECT COUNT(a) FROM Aula a WHERE a.turma = :turma AND a.diaDaSemana = :dia AND a.slotHorario = :slot", Long.class)
                 .setParameter("turma", turma)
                 .setParameter("dia", dia)
                 .setParameter("slot", slot)

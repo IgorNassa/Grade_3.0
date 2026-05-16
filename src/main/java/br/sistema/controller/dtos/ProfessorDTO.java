@@ -1,7 +1,10 @@
 package br.sistema.controller.dtos;
 
+import java.util.List;
+
 public record ProfessorDTO(
+        Long id,
         String nome,
-        Long id
+        List<String> disciplinas
 ) {
 }

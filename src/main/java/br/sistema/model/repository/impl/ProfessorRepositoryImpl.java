@@ -6,6 +6,7 @@ import br.sistema.model.repository.interfaces.ProfessorRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 
+import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,31 +20,19 @@ public class ProfessorRepositoryImpl implements ProfessorRepository {
 
     @Override
     public void save(Professor professor) {
-        em.getTransaction().begin();
+        if (professor.getDisciplinas() != null) {
+            List<Disciplina> disciplinasManaged = new ArrayList<>();
 
-        try {
-            if (professor.getDisciplinas() != null) {
-                List<Disciplina> disciplinasManaged = new ArrayList<>();
-
-                for (Disciplina disciplina : professor.getDisciplinas()) {
-                    disciplinasManaged.add(em.merge(disciplina));
-                }
-
-                professor.setDisciplinas(disciplinasManaged);
+            for (Disciplina disciplina : professor.getDisciplinas()) {
+                disciplinasManaged.add(em.merge(disciplina));
             }
 
-            em.persist(professor);
-            em.flush();
-            em.refresh(professor);
-            em.getTransaction().commit();
-
-        } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
+            professor.setDisciplinas(disciplinasManaged);
         }
+
+        em.persist(professor);
+        em.flush();
+        em.refresh(professor);
     }
 
     @Override
@@ -65,54 +54,29 @@ public class ProfessorRepositoryImpl implements ProfessorRepository {
 
     @Override
     public void update(Professor professor) {
-        em.getTransaction().begin();
+        if (professor.getDisciplinas() != null) {
+            List<Disciplina> disciplinasManaged = new ArrayList<>();
 
-        try {
-            if (professor.getDisciplinas() != null) {
-                List<Disciplina> disciplinasManaged = new ArrayList<>();
-
-                for (Disciplina disciplina : professor.getDisciplinas()) {
-                    disciplinasManaged.add(em.merge(disciplina));
-                }
-
-                professor.setDisciplinas(disciplinasManaged);
+            for (Disciplina disciplina : professor.getDisciplinas()) {
+                disciplinasManaged.add(em.merge(disciplina));
             }
 
-            em.merge(professor);
-            em.getTransaction().commit();
-
-        } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
+            professor.setDisciplinas(disciplinasManaged);
         }
+
+        em.merge(professor);
     }
 
     @Override
     public void delete(Professor professor) {
-        em.getTransaction().begin();
+        if (professor == null || professor.getId() == null) {
+            throw new IllegalArgumentException("Professor inválido para exclusão.");
+        }
 
-        try {
-            if (professor == null || professor.getId() == null) {
-                throw new IllegalArgumentException("Professor inválido para exclusão.");
-            }
+        Professor professorManaged = em.find(Professor.class, professor.getId());
 
-            Professor professorManaged = em.find(Professor.class, professor.getId());
-
-            if (professorManaged != null) {
-                em.remove(professorManaged);
-            }
-
-            em.getTransaction().commit();
-
-        } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
+        if (professorManaged != null) {
+            em.remove(professorManaged);
         }
     }
 
@@ -141,17 +105,33 @@ public class ProfessorRepositoryImpl implements ProfessorRepository {
             return new ArrayList<>();
         }
 
-        try {
-            return em.createQuery(
-                            "SELECT p FROM Professor p WHERE :disciplina MEMBER OF p.disciplinas",
-                            Professor.class
-                    )
-                    .setParameter("disciplina", disciplina)
-                    .getResultList();
+        return em.createQuery(
+                        "SELECT p FROM Professor p WHERE :disciplina MEMBER OF p.disciplinas",
+                        Professor.class
+                )
+                .setParameter("disciplina", disciplina)
+                .getResultList();
+    }
 
-        } catch (Exception e) {
-            System.err.println("[ERRO] Falha ao buscar professores por disciplina: " + e.getMessage());
-            return new ArrayList<>();
+    @Override
+    public boolean isProfessorDisponivel(Professor professor, DayOfWeek dia, Integer slot) {
+        if (professor == null || dia == null || slot == null) {
+            return false;
         }
+
+        Long count = em.createQuery(
+                        "SELECT COUNT(pd) FROM ProfessorDisponibilidade pd " +
+                                "WHERE pd.professor = :professor " +
+                                "AND pd.diaDaSemana = :dia " +
+                                "AND pd.slotHorario = :slot " +
+                                "AND pd.disponivel = false",
+                        Long.class
+                )
+                .setParameter("professor", professor)
+                .setParameter("dia", dia)
+                .setParameter("slot", slot)
+                .getSingleResult();
+
+        return count == 0;
     }
 }

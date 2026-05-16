@@ -26,7 +26,7 @@ public interface AulaRepository {
 
     void deleteByTurma(Turma turma);
 
-    boolean professorOcupadoNoBanco(Professor professor, DayOfWeek dia, Integer slot);
+    boolean professorOcupadoNoBanco(Professor professor, DayOfWeek dia, Integer slot, Turma turmaAExcluir);
 
     boolean turmaOcupadaNoBanco(Turma turma, DayOfWeek dia, Integer slot);
 
