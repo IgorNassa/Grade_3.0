@@ -15,7 +15,7 @@ public interface DisciplinaMapper {
 
     DisciplinaDTO toDTO(Disciplina entity);
 
-    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "id", source = "id")
     Disciplina toEntity(DisciplinaDTO dto);
 
     List<DisciplinaDTO> toDTOList(List<Disciplina> disciplinas);

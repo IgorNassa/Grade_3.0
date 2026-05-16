@@ -10,27 +10,42 @@ import java.util.List;
 public class ProfessorControllerImpl implements ProfessorController {
 
     private final ProfessorService professorService;
+    private final br.sistema.model.service.interfaces.DisciplinaService disciplinaService;
 
-    public ProfessorControllerImpl(ProfessorService professorService) {
+    public ProfessorControllerImpl(ProfessorService professorService, br.sistema.model.service.interfaces.DisciplinaService disciplinaService) {
         this.professorService = professorService;
+        this.disciplinaService = disciplinaService;
     }
-
 
     @Override
     public void save(ProfessorDTO professorDTO) {
-     Professor professor = ProfessorMapper.INSTANCE.toEntity(professorDTO);
-     professorService.save(professor);
-     //pega o ProfessorDTO que vem do controller
-        //converte para Professor entity.
-        //manda para o service, que trabalha com entity
+        Professor professor = ProfessorMapper.INSTANCE.toEntity(professorDTO);
+        mapDisciplinas(professorDTO, professor);
+        professorService.save(professor);
     }
 
     @Override
     public void update(ProfessorDTO professorDTO) {
         Professor professor = ProfessorMapper.INSTANCE.toEntity(professorDTO);
+        mapDisciplinas(professorDTO, professor);
         professorService.update(professor);
     }
-    //mesma coisa de cimma.
+
+    private void mapDisciplinas(ProfessorDTO dto, Professor entity) {
+        if (dto.disciplinas() != null) {
+            List<br.sistema.model.entity.Disciplina> entities = dto.disciplinas().stream()
+                    .map(nome -> {
+                        br.sistema.model.entity.Disciplina d = disciplinaService.findByName(nome);
+                        if (d == null) {
+                            d = new br.sistema.model.entity.Disciplina();
+                            d.setNome(nome);
+                        }
+                        return d;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            entity.setDisciplinas(entities);
+        }
+    }
 
     @Override
     public void delete(ProfessorDTO professorDTO) {

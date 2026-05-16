@@ -14,6 +14,6 @@ public interface TurnoMapper {
     TurnoDTO toDTO(Turno entity);
 
 
-    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "id", source = "id")
     Turno toEntity(TurnoDTO dto);
 }

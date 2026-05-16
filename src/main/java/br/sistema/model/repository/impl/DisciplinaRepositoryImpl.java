@@ -17,20 +17,9 @@ public class DisciplinaRepositoryImpl implements DisciplinaRepository {
 
     @Override
     public void save(Disciplina disciplina) {
-        em.getTransaction().begin();
-
-        try {
-            em.persist(disciplina);
-            em.flush();
-            em.refresh(disciplina);
-            em.getTransaction().commit();
-        } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
-        }
+        em.persist(disciplina);
+        em.flush();
+        em.refresh(disciplina);
     }
 
     @Override
@@ -43,38 +32,16 @@ public class DisciplinaRepositoryImpl implements DisciplinaRepository {
 
     @Override
     public void update(Disciplina disciplina) {
-        em.getTransaction().begin();
-
-        try {
-            em.merge(disciplina);
-            em.getTransaction().commit();
-        } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
-        }
+        em.merge(disciplina);
     }
 
     @Override
     public void delete(Disciplina disciplina) {
-        em.getTransaction().begin();
+        Disciplina disciplinaGerenciada = em.contains(disciplina)
+                ? disciplina
+                : em.merge(disciplina);
 
-        try {
-            Disciplina disciplinaGerenciada = em.contains(disciplina)
-                    ? disciplina
-                    : em.merge(disciplina);
-
-            em.remove(disciplinaGerenciada);
-            em.getTransaction().commit();
-        } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
-        }
+        em.remove(disciplinaGerenciada);
     }
 
     @Override

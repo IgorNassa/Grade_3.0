@@ -12,6 +12,6 @@ public interface TurmaMapper {
 
     TurmaDTO toDTO(Turma entity);
 
-    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "id", source = "id")
     Turma toEntity(TurmaDTO dto);
 }

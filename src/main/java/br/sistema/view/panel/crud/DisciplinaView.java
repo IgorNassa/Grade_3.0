@@ -1,5 +1,8 @@
 package br.sistema.view.panel.crud;
 
+import br.sistema.controller.dtos.DisciplinaDTO;
+import br.sistema.controller.interfaces.DisciplinaController;
+import br.sistema.util.ServiceRegistry;
 import br.sistema.view.util.AppTheme;
 
 import javax.swing.*;
@@ -7,6 +10,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.List;
 
 /**
  * Painel CRUD de Disciplinas — tema dark, sem dependência de banco.
@@ -19,12 +23,17 @@ public class DisciplinaView extends JPanel {
     private final JTable tabela;
 
     // Campos do formulário
+    private JPanel painelFormulario;
+    private JLabel lblFormTitulo;
     private JTextField txtNome;
 
     // Estado de edição
     private int linhaSelecionada = -1;
 
+    private final DisciplinaController disciplinaController;
+
     public DisciplinaView() {
+        this.disciplinaController = ServiceRegistry.getInstance().get(DisciplinaController.class);
         setLayout(new BorderLayout(0, 0));
         setBackground(AppTheme.BG_CONTENT);
         setBorder(new EmptyBorder(32, 32, 32, 32));
@@ -37,7 +46,7 @@ public class DisciplinaView extends JPanel {
         add(montarTopo(), BorderLayout.NORTH);
         add(montarCorpo(), BorderLayout.CENTER);
 
-        popularDadosFicticios();
+        refreshTable();
     }
 
     // ── Topo ──────────────────────────────────────────────────────────────────
@@ -55,8 +64,17 @@ public class DisciplinaView extends JPanel {
         textos.setLayout(new BoxLayout(textos, BoxLayout.Y_AXIS));
         textos.add(titulo);
         textos.add(sub);
-
         painel.add(textos, BorderLayout.WEST);
+
+        JButton btnNovo = AppTheme.primaryButton("+ Cadastrar Disciplina");
+        btnNovo.setPreferredSize(new Dimension(180, 40));
+        btnNovo.addActionListener(e -> abrirFormularioNovo());
+
+        JPanel painelAcao = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 8));
+        painelAcao.setOpaque(false);
+        painelAcao.add(btnNovo);
+        painel.add(painelAcao, BorderLayout.EAST);
+
         return painel;
     }
 
@@ -65,7 +83,10 @@ public class DisciplinaView extends JPanel {
         JPanel corpo = new JPanel(new BorderLayout(0, 20));
         corpo.setOpaque(false);
 
-        corpo.add(montarFormulario(), BorderLayout.NORTH);
+        painelFormulario = montarFormulario();
+        painelFormulario.setVisible(false);
+
+        corpo.add(painelFormulario, BorderLayout.NORTH);
         corpo.add(montarTabela(), BorderLayout.CENTER);
 
         return corpo;
@@ -74,43 +95,74 @@ public class DisciplinaView extends JPanel {
     // ── Formulário ────────────────────────────────────────────────────────────
     private JPanel montarFormulario() {
         JPanel card = AppTheme.cardPanel(new GridBagLayout());
-        card.setBorder(new EmptyBorder(20, 24, 20, 24));
+        card.setBorder(new EmptyBorder(24, 28, 24, 28));
 
         GridBagConstraints gc = new GridBagConstraints();
-        gc.insets = new Insets(0, 0, 0, 14);
+        gc.insets = new Insets(0, 0, 10, 14);
         gc.anchor = GridBagConstraints.WEST;
         gc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Label Nome
-        gc.gridx = 0; gc.gridy = 0; gc.weightx = 0;
+        // Título do Formulário
+        gc.gridx = 0; gc.gridy = 0; gc.gridwidth = 4;
+        lblFormTitulo = new JLabel("Cadastrar Nova Disciplina");
+        lblFormTitulo.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblFormTitulo.setForeground(AppTheme.TEXT_PRIMARY);
+        lblFormTitulo.setBorder(new EmptyBorder(0, 0, 16, 0));
+        card.add(lblFormTitulo, gc);
+
+        // Row 1 — Labels
+        gc.gridy = 1; gc.gridwidth = 1; gc.weightx = 0;
         card.add(AppTheme.label("Nome da Disciplina"), gc);
 
         // Field Nome
-        gc.gridx = 1; gc.weightx = 1.0;
+        gc.gridy = 2; gc.gridx = 0; gc.weightx = 1.0;
         txtNome = AppTheme.styledField("Ex: Matemática", 300);
         card.add(txtNome, gc);
 
         // Botões
-        gc.gridx = 2; gc.weightx = 0;
+        gc.gridx = 1; gc.weightx = 0;
         JButton btnSalvar = AppTheme.primaryButton("Salvar");
-        btnSalvar.setPreferredSize(new Dimension(100, 38));
         card.add(btnSalvar, gc);
 
-        gc.gridx = 3;
-        JButton btnLimpar = AppTheme.secondaryButton("Limpar");
-        card.add(btnLimpar, gc);
+        gc.gridx = 2;
+        JButton btnCancelar = AppTheme.secondaryButton("Cancelar");
+        card.add(btnCancelar, gc);
 
-        gc.gridx = 4;
+        gc.gridx = 3;
         JButton btnExcluir = AppTheme.dangerButton("Excluir");
         card.add(btnExcluir, gc);
 
-        // Ações
         btnSalvar.addActionListener(e -> salvar());
-        btnLimpar.addActionListener(e -> limpar());
+        btnCancelar.addActionListener(e -> fecharFormulario());
         btnExcluir.addActionListener(e -> excluir());
         txtNome.addActionListener(e -> salvar());
 
         return card;
+    }
+
+    private void abrirFormularioNovo() {
+        linhaSelecionada = -1;
+        lblFormTitulo.setText("Cadastrar Nova Disciplina");
+        txtNome.setText("");
+        painelFormulario.setVisible(true);
+        revalidate(); repaint();
+        txtNome.requestFocus();
+    }
+
+    private void abrirFormularioEdicao(int row) {
+        linhaSelecionada = row;
+        lblFormTitulo.setText("Editar Disciplina: " + tableModel.getValueAt(row, 1));
+        txtNome.setText((String) tableModel.getValueAt(row, 1));
+        painelFormulario.setVisible(true);
+        revalidate(); repaint();
+    }
+
+    private void fecharFormulario() {
+        painelFormulario.setVisible(false);
+        txtNome.setText("");
+        linhaSelecionada = -1;
+        tabela.clearSelection();
+        revalidate(); repaint();
     }
 
     // ── Tabela ────────────────────────────────────────────────────────────────
@@ -125,14 +177,8 @@ public class DisciplinaView extends JPanel {
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 14));
         titulo.setForeground(AppTheme.TEXT_PRIMARY);
         header.add(titulo);
-        card.add(header, BorderLayout.NORTH);
 
-        // Separador
-        JSeparator sep = new JSeparator();
-        sep.setForeground(AppTheme.BORDER_COLOR);
-        sep.setBackground(AppTheme.BORDER_COLOR);
-        card.add(sep, BorderLayout.CENTER);
-
+        // Scroll
         JScrollPane scroll = new JScrollPane(tabela);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.setBackground(AppTheme.BG_CARD);
@@ -147,19 +193,18 @@ public class DisciplinaView extends JPanel {
             }
         });
 
-        JPanel scrollContainer = new JPanel(new BorderLayout());
-        scrollContainer.setOpaque(false);
-        scrollContainer.setBorder(new EmptyBorder(4, 0, 0, 0));
-        scrollContainer.add(scroll);
+        // Container para organizar topo (header + separator)
+        JPanel topo = new JPanel();
+        topo.setOpaque(false);
+        topo.setLayout(new BoxLayout(topo, BoxLayout.Y_AXIS));
+        topo.add(header);
+        topo.add(new JSeparator() {{
+            setForeground(AppTheme.BORDER_COLOR);
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+        }});
 
-        card.add(scrollContainer, BorderLayout.SOUTH);
-
-        // Ajuste layout do card
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.removeAll();
-        card.add(header);
-        card.add(new JSeparator() {{ setForeground(AppTheme.BORDER_COLOR); setMaximumSize(new Dimension(Integer.MAX_VALUE, 1)); }});
-        card.add(scroll);
+        card.add(topo, BorderLayout.NORTH);
+        card.add(scroll, BorderLayout.CENTER);
 
         return card;
     }
@@ -203,8 +248,7 @@ public class DisciplinaView extends JPanel {
             @Override public void mouseClicked(MouseEvent e) {
                 int row = t.getSelectedRow();
                 if (row >= 0) {
-                    linhaSelecionada = row;
-                    txtNome.setText((String) tableModel.getValueAt(row, 1));
+                    abrirFormularioEdicao(row);
                 }
             }
         });
@@ -213,6 +257,18 @@ public class DisciplinaView extends JPanel {
     }
 
     // ── Ações CRUD ────────────────────────────────────────────────────────────
+    private void refreshTable() {
+        tableModel.setRowCount(0);
+        try {
+            List<DisciplinaDTO> lista = disciplinaController.findAll();
+            for (DisciplinaDTO d : lista) {
+                tableModel.addRow(new Object[]{d.id(), d.nome()});
+            }
+        } catch (Exception e) {
+            mostrarErro("Erro ao carregar disciplinas: " + e.getMessage());
+        }
+    }
+
     private void salvar() {
         String nome = txtNome.getText().trim();
         if (nome.isEmpty()) {
@@ -220,23 +276,22 @@ public class DisciplinaView extends JPanel {
             return;
         }
 
-        if (linhaSelecionada >= 0) {
-            // Editar linha existente
-            tableModel.setValueAt(nome, linhaSelecionada, 1);
-            mostrarSucesso("Disciplina atualizada com sucesso!");
-        } else {
-            // Verificar duplicata
-            for (int i = 0; i < tableModel.getRowCount(); i++) {
-                if (nome.equalsIgnoreCase((String) tableModel.getValueAt(i, 1))) {
-                    mostrarErro("Já existe uma disciplina com esse nome.");
-                    return;
-                }
+        try {
+            if (linhaSelecionada >= 0) {
+                Long id = (Long) tableModel.getValueAt(linhaSelecionada, 0);
+                DisciplinaDTO dto = new DisciplinaDTO(id, nome);
+                disciplinaController.update(dto);
+                mostrarSucesso("Disciplina atualizada com sucesso!");
+            } else {
+                DisciplinaDTO dto = new DisciplinaDTO(null, nome);
+                disciplinaController.save(dto);
+                mostrarSucesso("Disciplina cadastrada com sucesso!");
             }
-            int novoId = tableModel.getRowCount() + 1;
-            tableModel.addRow(new Object[]{novoId, nome});
-            mostrarSucesso("Disciplina cadastrada com sucesso!");
+            fecharFormulario();
+            refreshTable();
+        } catch (Exception e) {
+            mostrarErro("Erro ao salvar disciplina: " + e.getMessage());
         }
-        limpar();
     }
 
     private void excluir() {
@@ -245,7 +300,10 @@ public class DisciplinaView extends JPanel {
             mostrarErro("Selecione uma disciplina na tabela para excluir.");
             return;
         }
+        
+        Long id = (Long) tableModel.getValueAt(row, 0);
         String nome = (String) tableModel.getValueAt(row, 1);
+        
         int confirm = JOptionPane.showConfirmDialog(
             this,
             "Deseja realmente excluir a disciplina \"" + nome + "\"?",
@@ -253,14 +311,18 @@ public class DisciplinaView extends JPanel {
             JOptionPane.YES_NO_OPTION,
             JOptionPane.WARNING_MESSAGE
         );
+
         if (confirm == JOptionPane.YES_OPTION) {
-            tableModel.removeRow(row);
-            renumerarTabela();
-            mostrarSucesso("Disciplina excluída com sucesso!");
-            limpar();
+            try {
+                disciplinaController.delete(new DisciplinaDTO(id, nome));
+                mostrarSucesso("Disciplina excluída com sucesso!");
+                fecharFormulario();
+                refreshTable();
+            } catch (Exception e) {
+                mostrarErro("Erro ao excluir disciplina: " + e.getMessage());
+            }
         }
     }
-
     private void limpar() {
         txtNome.setText("");
         linhaSelecionada = -1;
@@ -275,11 +337,7 @@ public class DisciplinaView extends JPanel {
     }
 
     private void popularDadosFicticios() {
-        String[] disciplinas = {"Matemática", "Português", "História", "Geografia", "Física",
-                "Química", "Biologia", "Inglês", "Educação Física", "Arte"};
-        for (int i = 0; i < disciplinas.length; i++) {
-            tableModel.addRow(new Object[]{i + 1, disciplinas[i]});
-        }
+        // Removido - usando banco de dados
     }
 
     private void mostrarErro(String msg) {

@@ -1,5 +1,8 @@
 package br.sistema.view.panel.crud;
 
+import br.sistema.controller.dtos.ProfessorDTO;
+import br.sistema.controller.interfaces.ProfessorController;
+import br.sistema.util.ServiceRegistry;
 import br.sistema.view.util.AppTheme;
 
 import javax.swing.*;
@@ -7,6 +10,9 @@ import javax.swing.border.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ProfessorView extends JPanel {
 
@@ -19,7 +25,10 @@ public class ProfessorView extends JPanel {
     private JTextField txtDisciplinas;
     private JLabel lblFormTitulo;
 
+    private final ProfessorController professorController;
+
     public ProfessorView() {
+        this.professorController = ServiceRegistry.getInstance().get(ProfessorController.class);
         setLayout(new BorderLayout());
         setBackground(AppTheme.BG_CONTENT);
         setBorder(new EmptyBorder(32, 32, 32, 32));
@@ -33,7 +42,7 @@ public class ProfessorView extends JPanel {
 
         add(buildHeader(), BorderLayout.NORTH);
         add(buildBody(),   BorderLayout.CENTER);
-        seedData();
+        refreshTable();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -269,60 +278,77 @@ public class ProfessorView extends JPanel {
     // ─────────────────────────────────────────────────────────────────────────
     // AÇÕES
     // ─────────────────────────────────────────────────────────────────────────
+    private void refreshTable() {
+        model.setRowCount(0);
+        try {
+            List<ProfessorDTO> lista = professorController.findAll();
+            for (ProfessorDTO p : lista) {
+                String dStr = p.disciplinas() != null ? String.join(", ", p.disciplinas()) : "";
+                model.addRow(new Object[]{p.id(), p.nome(), dStr, "Ativo"});
+            }
+        } catch (Exception e) {
+            erro("Erro ao carregar professores: " + e.getMessage());
+        }
+    }
+
     private void salvar() {
         String nome = txtNome.getText().trim();
-        String disc = txtDisciplinas.getText().trim();
-        if (nome.isEmpty()) { erro("O nome do professor é obrigatório."); return; }
-        if (linhaSelecionada >= 0) {
-            model.setValueAt(nome, linhaSelecionada, 1);
-            model.setValueAt(disc, linhaSelecionada, 2);
-            ok("Professor atualizado com sucesso!");
-        } else {
-            for (int i = 0; i < model.getRowCount(); i++) {
-                if (nome.equalsIgnoreCase((String) model.getValueAt(i, 1))) { 
-                    erro("Professor já cadastrado."); 
-                    return; 
-                }
-            }
-            int novoId = model.getRowCount() + 1;
-            model.addRow(new Object[]{novoId, nome, disc, "Ativo"});
-            ok("Professor cadastrado com sucesso!");
+        String discStr = txtDisciplinas.getText().trim();
+        
+        if (nome.isEmpty()) { 
+            erro("O nome do professor é obrigatório."); 
+            return; 
         }
-        fecharFormulario();
+
+        List<String> disciplinas = Arrays.stream(discStr.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+
+        try {
+            if (linhaSelecionada >= 0) {
+                Long id = (Long) model.getValueAt(linhaSelecionada, 0);
+                ProfessorDTO dto = new ProfessorDTO(id, nome, disciplinas);
+                professorController.update(dto);
+                ok("Professor atualizado com sucesso!");
+            } else {
+                ProfessorDTO dto = new ProfessorDTO(null, nome, disciplinas);
+                professorController.save(dto);
+                ok("Professor cadastrado com sucesso!");
+            }
+            fecharFormulario();
+            refreshTable();
+        } catch (Exception e) {
+            erro("Erro ao salvar professor: " + e.getMessage());
+        }
     }
 
     private void excluir() {
         int row = tabela.getSelectedRow();
-        if (row < 0) { erro("Selecione um professor na tabela."); return; }
+        if (row < 0) { 
+            erro("Selecione um professor na tabela."); 
+            return; 
+        }
+
+        Long id = (Long) model.getValueAt(row, 0);
         String nome = (String) model.getValueAt(row, 1);
-        if (JOptionPane.showConfirmDialog(this, "Excluir o professor \"" + nome + "\"?",
-                "Confirmar Exclusão", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION) {
-            model.removeRow(row);
-            renumerar();
-            fecharFormulario();
-            ok("Professor excluído!");
-        }
-    }
 
-    private void renumerar() {
-        for (int i = 0; i < model.getRowCount(); i++) {
-            model.setValueAt(i + 1, i, 0);
-        }
-    }
+        int confirm = JOptionPane.showConfirmDialog(this, 
+                "Deseja realmente excluir o professor \"" + nome + "\"?",
+                "Confirmar Exclusão", 
+                JOptionPane.YES_NO_OPTION, 
+                JOptionPane.WARNING_MESSAGE);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // SEMENTE DE DADOS
-    // ─────────────────────────────────────────────────────────────────────────
-    private void seedData() {
-        Object[][] d = {
-            {1, "Carlos Mendes",   "Matemática, Física, Cálculo",   "Ativo"},
-            {2, "Ana Paula Lima",   "Português, Literatura",          "Ativo"},
-            {3, "Roberto Souza",    "História, Geografia, Filosofia", "Ativo"},
-            {4, "Fernanda Rocha",   "Química, Biologia",              "Ativo"},
-            {5, "Lucas Ferreira",   "Inglês, Arte, Música",           "Ativo"},
-            {6, "Mariana Costa",    "Educação Física, Biologia",      "Ativo"},
-        };
-        for (Object[] row : d) model.addRow(row);
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                professorController.delete(new ProfessorDTO(id, nome, null));
+                ok("Professor excluído com sucesso!");
+                fecharFormulario();
+                refreshTable();
+            } catch (Exception e) {
+                erro("Erro ao excluir professor: " + e.getMessage());
+            }
+        }
     }
 
     private void erro(String msg) { JOptionPane.showMessageDialog(this, msg, "Erro",    JOptionPane.ERROR_MESSAGE); }

@@ -1,5 +1,8 @@
 package br.sistema.view.panel.crud;
 
+import br.sistema.controller.dtos.TurmaDTO;
+import br.sistema.controller.interfaces.TurmaController;
+import br.sistema.util.ServiceRegistry;
 import br.sistema.view.util.AppTheme;
 
 import javax.swing.*;
@@ -7,6 +10,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.List;
 
 /**
  * Painel CRUD de Turmas — tema dark.
@@ -17,12 +21,17 @@ public class TurmaView extends JPanel {
     private final DefaultTableModel tableModel;
     private final JTable tabela;
 
+    private JPanel painelFormulario;
+    private JLabel lblFormTitulo;
     private JTextField txtNome;
     private JComboBox<String> cmbTipo;
 
     private int linhaSelecionada = -1;
 
+    private final TurmaController turmaController;
+
     public TurmaView() {
+        this.turmaController = ServiceRegistry.getInstance().get(TurmaController.class);
         setLayout(new BorderLayout());
         setBackground(AppTheme.BG_CONTENT);
         setBorder(new EmptyBorder(32, 32, 32, 32));
@@ -34,7 +43,7 @@ public class TurmaView extends JPanel {
 
         add(montarTopo(), BorderLayout.NORTH);
         add(montarCorpo(), BorderLayout.CENTER);
-        popularDadosFicticios();
+        refreshTable();
     }
 
     private JPanel montarTopo() {
@@ -51,36 +60,57 @@ public class TurmaView extends JPanel {
         textos.setLayout(new BoxLayout(textos, BoxLayout.Y_AXIS));
         textos.add(titulo);
         textos.add(sub);
-
         p.add(textos, BorderLayout.WEST);
+
+        JButton btnNovo = AppTheme.primaryButton("+ Cadastrar Turma");
+        btnNovo.setPreferredSize(new Dimension(180, 40));
+        btnNovo.addActionListener(e -> abrirFormularioNovo());
+
+        JPanel painelAcao = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 8));
+        painelAcao.setOpaque(false);
+        painelAcao.add(btnNovo);
+        p.add(painelAcao, BorderLayout.EAST);
+
         return p;
     }
 
     private JPanel montarCorpo() {
         JPanel corpo = new JPanel(new BorderLayout(0, 20));
         corpo.setOpaque(false);
-        corpo.add(montarFormulario(), BorderLayout.NORTH);
+
+        painelFormulario = montarFormulario();
+        painelFormulario.setVisible(false);
+
+        corpo.add(painelFormulario, BorderLayout.NORTH);
         corpo.add(montarTabela(), BorderLayout.CENTER);
         return corpo;
     }
 
     private JPanel montarFormulario() {
         JPanel card = AppTheme.cardPanel(new GridBagLayout());
-        card.setBorder(new EmptyBorder(20, 24, 20, 24));
+        card.setBorder(new EmptyBorder(24, 28, 24, 28));
 
         GridBagConstraints gc = new GridBagConstraints();
         gc.anchor = GridBagConstraints.WEST;
         gc.fill = GridBagConstraints.HORIZONTAL;
-        gc.insets = new Insets(0, 0, 8, 14);
+        gc.insets = new Insets(0, 0, 10, 14);
 
-        // Row 0 — Labels
-        gc.gridy = 0; gc.gridx = 0; gc.weightx = 0;
+        // Título do Formulário
+        gc.gridx = 0; gc.gridy = 0; gc.gridwidth = 5;
+        lblFormTitulo = new JLabel("Cadastrar Nova Turma");
+        lblFormTitulo.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblFormTitulo.setForeground(AppTheme.TEXT_PRIMARY);
+        lblFormTitulo.setBorder(new EmptyBorder(0, 0, 16, 0));
+        card.add(lblFormTitulo, gc);
+
+        // Row 1 — Labels
+        gc.gridy = 1; gc.gridwidth = 1; gc.insets = new Insets(0, 0, 6, 14);
         card.add(AppTheme.label("Nome da Turma"), gc);
         gc.gridx = 1;
         card.add(AppTheme.label("Tipo de Ensino"), gc);
 
-        // Row 1 — Fields + Buttons
-        gc.gridy = 1; gc.gridx = 0; gc.weightx = 0.5; gc.insets = new Insets(0, 0, 0, 14);
+        // Row 2 — Fields + Buttons
+        gc.gridy = 2; gc.gridx = 0; gc.weightx = 0.5; gc.insets = new Insets(0, 0, 0, 14);
         txtNome = AppTheme.styledField("Ex: 1A, 2B, 3C", 200);
         card.add(txtNome, gc);
 
@@ -93,54 +123,75 @@ public class TurmaView extends JPanel {
         card.add(btnSalvar, gc);
 
         gc.gridx = 3;
-        JButton btnLimpar = AppTheme.secondaryButton("Limpar");
-        card.add(btnLimpar, gc);
+        JButton btnCancelar = AppTheme.secondaryButton("Cancelar");
+        card.add(btnCancelar, gc);
 
         gc.gridx = 4;
         JButton btnExcluir = AppTheme.dangerButton("Excluir");
         card.add(btnExcluir, gc);
 
         btnSalvar.addActionListener(e -> salvar());
-        btnLimpar.addActionListener(e -> limpar());
+        btnCancelar.addActionListener(e -> fecharFormulario());
         btnExcluir.addActionListener(e -> excluir());
         txtNome.addActionListener(e -> salvar());
 
         return card;
     }
 
-    private JPanel montarTabela() {
-        JPanel card = new JPanel() {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(AppTheme.BG_CARD);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
-                g2.setColor(AppTheme.BORDER_COLOR);
-                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 16, 16);
-                g2.dispose();
-            }
-        };
-        card.setOpaque(false);
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+    private void abrirFormularioNovo() {
+        linhaSelecionada = -1;
+        lblFormTitulo.setText("Cadastrar Nova Turma");
+        limpar();
+        painelFormulario.setVisible(true);
+        revalidate(); repaint();
+        txtNome.requestFocus();
+    }
 
+    private void abrirFormularioEdicao(int row) {
+        linhaSelecionada = row;
+        lblFormTitulo.setText("Editar Turma: " + tableModel.getValueAt(row, 1));
+        txtNome.setText((String) tableModel.getValueAt(row, 1));
+        cmbTipo.setSelectedItem(tableModel.getValueAt(row, 2));
+        painelFormulario.setVisible(true);
+        revalidate(); repaint();
+    }
+
+    private void fecharFormulario() {
+        painelFormulario.setVisible(false);
+        limpar();
+        revalidate(); repaint();
+    }
+
+    private JPanel montarTabela() {
+        JPanel card = AppTheme.cardPanel(new BorderLayout());
+        card.setBorder(new EmptyBorder(0, 0, 0, 0));
+
+        // Cabeçalho
         JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 14));
         header.setOpaque(false);
         JLabel titulo = new JLabel("Lista de Turmas");
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 14));
         titulo.setForeground(AppTheme.TEXT_PRIMARY);
         header.add(titulo);
-        card.add(header);
 
-        card.add(new JSeparator() {{
+        // Scroll
+        JScrollPane scroll = new JScrollPane(tabela);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setBackground(AppTheme.BG_CARD);
+
+        // Container para organizar topo (header + separator)
+        JPanel topo = new JPanel();
+        topo.setOpaque(false);
+        topo.setLayout(new BoxLayout(topo, BoxLayout.Y_AXIS));
+        topo.add(header);
+        topo.add(new JSeparator() {{
             setForeground(AppTheme.BORDER_COLOR);
             setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
         }});
 
-        JScrollPane scroll = new JScrollPane(tabela);
-        scroll.setBorder(BorderFactory.createEmptyBorder());
-        scroll.getViewport().setBackground(AppTheme.BG_CARD);
-        scroll.setAlignmentX(Component.LEFT_ALIGNMENT);
-        card.add(scroll);
+        card.add(topo, BorderLayout.NORTH);
+        card.add(scroll, BorderLayout.CENTER);
+
         return card;
     }
 
@@ -178,49 +229,78 @@ public class TurmaView extends JPanel {
             @Override public void mouseClicked(MouseEvent e) {
                 int row = t.getSelectedRow();
                 if (row >= 0) {
-                    linhaSelecionada = row;
-                    txtNome.setText((String) tableModel.getValueAt(row, 1));
-                    cmbTipo.setSelectedItem(tableModel.getValueAt(row, 2));
+                    abrirFormularioEdicao(row);
                 }
             }
         });
         return t;
     }
 
+    private void refreshTable() {
+        tableModel.setRowCount(0);
+        try {
+            List<TurmaDTO> lista = turmaController.findAll();
+            for (TurmaDTO t : lista) {
+                tableModel.addRow(new Object[]{t.id(), t.nome(), t.eMedio() ? "Ensino Médio" : "Ensino Fundamental"});
+            }
+        } catch (Exception e) {
+            mostrarErro("Erro ao carregar turmas: " + e.getMessage());
+        }
+    }
+
     private void salvar() {
         String nome = txtNome.getText().trim();
         String tipo = (String) cmbTipo.getSelectedItem();
+        boolean eMedio = "Ensino Médio".equals(tipo);
 
-        if (nome.isEmpty()) { mostrarErro("O nome da turma é obrigatório."); return; }
-
-        if (linhaSelecionada >= 0) {
-            tableModel.setValueAt(nome, linhaSelecionada, 1);
-            tableModel.setValueAt(tipo, linhaSelecionada, 2);
-            mostrarSucesso("Turma atualizada!");
-        } else {
-            for (int i = 0; i < tableModel.getRowCount(); i++) {
-                if (nome.equalsIgnoreCase((String) tableModel.getValueAt(i, 1))) {
-                    mostrarErro("Já existe uma turma com esse nome.");
-                    return;
-                }
-            }
-            tableModel.addRow(new Object[]{tableModel.getRowCount() + 1, nome, tipo});
-            mostrarSucesso("Turma cadastrada com sucesso!");
+        if (nome.isEmpty()) { 
+            mostrarErro("O nome da turma é obrigatório."); 
+            return; 
         }
-        limpar();
+
+        try {
+            if (linhaSelecionada >= 0) {
+                Long id = (Long) tableModel.getValueAt(linhaSelecionada, 0);
+                TurmaDTO dto = new TurmaDTO(id, nome, eMedio);
+                turmaController.update(dto);
+                mostrarSucesso("Turma atualizada com sucesso!");
+            } else {
+                TurmaDTO dto = new TurmaDTO(null, nome, eMedio);
+                turmaController.save(dto);
+                mostrarSucesso("Turma cadastrada com sucesso!");
+            }
+            fecharFormulario();
+            refreshTable();
+        } catch (Exception e) {
+            mostrarErro("Erro ao salvar turma: " + e.getMessage());
+        }
     }
 
     private void excluir() {
         int row = tabela.getSelectedRow();
-        if (row < 0) { mostrarErro("Selecione uma turma para excluir."); return; }
+        if (row < 0) { 
+            mostrarErro("Selecione uma turma para excluir."); 
+            return; 
+        }
+        
+        Long id = (Long) tableModel.getValueAt(row, 0);
         String nome = (String) tableModel.getValueAt(row, 1);
-        int c = JOptionPane.showConfirmDialog(this,
-            "Excluir a turma \"" + nome + "\"?", "Confirmar", JOptionPane.YES_NO_OPTION);
-        if (c == JOptionPane.YES_OPTION) {
-            tableModel.removeRow(row);
-            renumerar();
-            mostrarSucesso("Turma excluída!");
-            limpar();
+        
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Deseja realmente excluir a turma \"" + nome + "\"?", 
+            "Confirmar Exclusão", 
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                turmaController.delete(new TurmaDTO(id, nome, false));
+                mostrarSucesso("Turma excluída com sucesso!");
+                fecharFormulario();
+                refreshTable();
+            } catch (Exception e) {
+                mostrarErro("Erro ao excluir turma: " + e.getMessage());
+            }
         }
     }
 
@@ -234,12 +314,7 @@ public class TurmaView extends JPanel {
     }
 
     private void popularDadosFicticios() {
-        Object[][] dados = {
-            {1, "1A", "Ensino Médio"}, {2, "1B", "Ensino Médio"},
-            {3, "2A", "Ensino Médio"}, {4, "2B", "Ensino Médio"},
-            {5, "3A", "Ensino Médio"}, {6, "6A", "Ensino Fundamental"},
-        };
-        for (Object[] row : dados) tableModel.addRow(row);
+        // Removido - usando banco de dados
     }
 
     private void mostrarErro(String msg)   { JOptionPane.showMessageDialog(this, msg, "Erro", JOptionPane.ERROR_MESSAGE); }

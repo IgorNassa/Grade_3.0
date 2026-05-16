@@ -1,4 +1,5 @@
 package br.sistema;
+
 import br.sistema.config.database.JPAConfig;
 import br.sistema.model.repository.impl.AulaRepositoryImpl;
 import br.sistema.model.repository.impl.DisciplinaRepositoryImpl;
@@ -10,27 +11,23 @@ import br.sistema.model.repository.interfaces.DisciplinaRepository;
 import br.sistema.model.repository.interfaces.ProfessorRepository;
 import br.sistema.model.repository.interfaces.TurmaRepository;
 import br.sistema.model.repository.interfaces.TurnoRepository;
-import br.sistema.model.service.impl.AulaServiceImpl;
-import br.sistema.model.service.impl.DisciplinaServiceImpl;
-import br.sistema.model.service.impl.ProfessorServiceImpl;
-import br.sistema.model.service.impl.TurmaServiceImpl;
-import br.sistema.model.service.impl.TurnoServiceImpl;
-import br.sistema.model.service.interfaces.AulaService;
-import br.sistema.model.service.interfaces.DisciplinaService;
-import br.sistema.model.service.interfaces.ProfessorService;
-import br.sistema.model.service.interfaces.TurmaService;
-import br.sistema.model.service.interfaces.TurnoService;
+import br.sistema.model.service.impl.*;
+import br.sistema.model.service.interfaces.*;
 import br.sistema.view.MenuPrincipal;
-import br.sistema.view.frame.DashFrame;
+import br.sistema.util.ServiceRegistry;
+import br.sistema.controller.impl.*;
+import br.sistema.controller.interfaces.*;
+import br.sistema.view.frame.LoginScreen;
 import jakarta.persistence.EntityManager;
 import org.flywaydb.core.Flyway;
 
+import javax.swing.SwingUtilities;
 
 public class Main {
 
+    private static EntityManager em;
+
     public static void main(String[] args) {
-
-
 
         String dbUrl = System.getenv().getOrDefault("DB_URL", "jdbc:postgresql://localhost:5432/grade");
         String dbUser = System.getenv().getOrDefault("DB_USER", "postgres");
@@ -56,54 +53,64 @@ public class Main {
 
         System.out.println("Conectando ao banco de dados...");
 
-        EntityManager em;
-
         try {
             em = JPAConfig.getEntityManager();
-        } catch (Exception e) {
-            System.err.println("[ERRO] Falha ao conectar o JPA: " + e.getMessage());
-            return;
-        }
 
-        try {
             DisciplinaRepository disciplinaRepo = new DisciplinaRepositoryImpl(em);
             ProfessorRepository professorRepo = new ProfessorRepositoryImpl(em);
             TurnoRepository turnoRepo = new TurnoRepositoryImpl(em);
             TurmaRepository turmaRepo = new TurmaRepositoryImpl(em);
             AulaRepository aulaRepo = new AulaRepositoryImpl(em);
 
-            DisciplinaService disciplinaService = new DisciplinaServiceImpl(disciplinaRepo);
-            ProfessorService professorService = new ProfessorServiceImpl(professorRepo);
-            TurnoService turnoService = new TurnoServiceImpl(turnoRepo);
-            TurmaService turmaService = new TurmaServiceImpl(turmaRepo);
-            AulaService aulaService = new AulaServiceImpl(aulaRepo, em);
+            DisciplinaService disciplinaServiceCore = new DisciplinaServiceImpl(disciplinaRepo);
+            ProfessorService professorServiceCore = new ProfessorServiceImpl(professorRepo);
+            TurnoService turnoServiceCore = new TurnoServiceImpl(turnoRepo);
+            TurmaService turmaServiceCore = new TurmaServiceImpl(turmaRepo);
+
+            DisciplinaService disciplinaService = new DisciplinaServiceTxDecorator(disciplinaServiceCore, em);
+            ProfessorService professorService = new ProfessorServiceTxDecorator(professorServiceCore, em);
+            TurnoService turnoService = new TurnoServiceTxDecorator(turnoServiceCore, em);
+            TurmaService turmaService = new TurmaServiceTxDecorator(turmaServiceCore, em);
+
+            AulaService aulaServiceCore = new AulaServiceImpl(aulaRepo, professorRepo);
+            AulaService aulaService = new AulaServiceTxDecorator(aulaServiceCore, em);
+
+            // Register Services
+            ServiceRegistry registry = ServiceRegistry.getInstance();
+            registry.register(DisciplinaService.class, disciplinaService);
+            registry.register(ProfessorService.class, professorService);
+            registry.register(TurnoService.class, turnoService);
+            registry.register(TurmaService.class, turmaService);
+            registry.register(AulaService.class, aulaService);
+
+            // Register Controllers
+            registry.register(ProfessorController.class, new ProfessorControllerImpl(professorService, disciplinaService));
+            registry.register(DisciplinaController.class, new DisciplinaControllerImpl(disciplinaService));
+            registry.register(TurnoController.class, new TurnoControllerImpl(turnoService));
+            registry.register(TurmaController.class, new TurmaControllerImpl(turmaService));
+            registry.register(AulaController.class, new AulaControllerImpl(aulaService));
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                if (em != null && em.isOpen()) {
+                    em.close();
+                    System.out.println("\nBase de dados desconectada. Sistema encerrado corretamente.");
+                }
+            }));
 
             System.out.println("Iniciando a interface do usuário...");
-            new DashFrame();
 
-            System.out.print("\033[H\033[2J");
-            System.out.flush();
-
-            MenuPrincipal menu = new MenuPrincipal(
-                    disciplinaService,
-                    professorService,
-                    turnoService,
-                    turmaService,
-                    aulaService
-            );
-
-            menu.iniciar();
+            SwingUtilities.invokeLater(() -> {
+                LoginScreen login = new LoginScreen();
+                login.setVisible(true);
+            });
 
         } catch (Exception e) {
             System.err.println("[ERRO] Ocorreu um erro inesperado: " + e.getMessage());
             e.printStackTrace();
-        } finally {
-            if (em.isOpen()) {
+
+            if (em != null && em.isOpen()) {
                 em.close();
             }
-
-            System.out.println("\nBase de dados desconectada. Sistema encerrado corretamente.");
         }
-
     }
-}                             
+}

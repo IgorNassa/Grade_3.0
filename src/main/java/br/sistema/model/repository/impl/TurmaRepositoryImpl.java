@@ -17,21 +17,9 @@ public class TurmaRepositoryImpl implements TurmaRepository {
 
     @Override
     public void save(Turma turma) {
-        em.getTransaction().begin();
-
-        try {
-            em.persist(turma);
-            em.flush();
-            em.refresh(turma);
-            em.getTransaction().commit();
-
-        } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
-        }
+        em.persist(turma);
+        em.flush();
+        em.refresh(turma);
     }
 
     @Override
@@ -53,44 +41,19 @@ public class TurmaRepositoryImpl implements TurmaRepository {
 
     @Override
     public void update(Turma turma) {
-        em.getTransaction().begin();
-
-        try {
-            em.merge(turma);
-            em.getTransaction().commit();
-
-        } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
-        }
+        em.merge(turma);
     }
 
     @Override
     public void delete(Turma turma) {
-        em.getTransaction().begin();
+        if (turma == null || turma.getId() == null) {
+            throw new IllegalArgumentException("Turma inválida para exclusão.");
+        }
 
-        try {
-            if (turma == null || turma.getId() == null) {
-                throw new IllegalArgumentException("Turma inválida para exclusão.");
-            }
+        Turma turmaManaged = em.find(Turma.class, turma.getId());
 
-            Turma turmaManaged = em.find(Turma.class, turma.getId());
-
-            if (turmaManaged != null) {
-                em.remove(turmaManaged);
-            }
-
-            em.getTransaction().commit();
-
-        } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            throw e;
+        if (turmaManaged != null) {
+            em.remove(turmaManaged);
         }
     }
 
