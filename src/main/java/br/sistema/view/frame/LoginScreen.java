@@ -1,5 +1,7 @@
 package br.sistema.view.frame;
 
+import br.sistema.view.util.AppTheme;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -8,21 +10,18 @@ import java.awt.event.MouseEvent;
 
 public class LoginScreen extends JFrame {
 
-    private final Color BACKGROUND = new Color(18, 18, 22); // Fundo principal da janela
-    private final Color CARD = new Color(34, 30, 52); // Fundo do card esquerdo (roxo escuro)
-    private final Color FIELD = new Color(26, 26, 32); // Fundo dos inputs
-    private final Color BORDER = new Color(60, 60, 75); // Borda sutil
-    private final Color PURPLE = new Color(114, 95, 231); // Cor de destaque principal
-    private final Color TEXT = new Color(230, 230, 235); // Texto primário
-    private final Color TEXT_MUTED = new Color(150, 150, 160); // Texto secundário/placeholder
+    // Cores alinhadas ao AppTheme para consistência visual
+    private final Color BACKGROUND = AppTheme.BG_MAIN;
+    private final Color CARD       = AppTheme.BG_CARD;
+    private final Color FIELD      = AppTheme.BG_FIELD;
+    private final Color BORDER     = AppTheme.BORDER_COLOR;
+    private final Color PURPLE     = AppTheme.PURPLE;
+    private final Color TEXT       = AppTheme.TEXT_PRIMARY;
+    private final Color TEXT_MUTED = AppTheme.TEXT_SECONDARY;
 
     // Variáveis para arrastar a janela
     private int mouseX;
     private int mouseY;
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new LoginScreen());
-    }
 
     // Fontes
     private Font loadFont(float size, int style) {

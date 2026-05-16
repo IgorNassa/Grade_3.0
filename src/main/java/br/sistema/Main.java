@@ -42,6 +42,7 @@ public class Main {
                     .baselineVersion("0")
                     .load();
 
+
             flyway.migrate();
 
             System.out.println("Migrações concluídas com sucesso!");
