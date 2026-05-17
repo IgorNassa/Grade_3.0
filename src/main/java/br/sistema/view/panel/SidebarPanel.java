@@ -3,6 +3,7 @@ package br.sistema.view.panel;
 import br.sistema.view.component.MenuButton;
 import br.sistema.view.util.AppTheme;
 import br.sistema.view.util.IconUtil;
+import br.sistema.view.frame.LoginScreen;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,6 +24,7 @@ public class SidebarPanel extends JPanel {
     private MenuButton btnTurnos;
     private MenuButton btnGerarGrade;
     private MenuButton btnVisualizar;
+    private MenuButton btnLogout;
 
     // Elementos adicionados para minimização
     private JLabel lblLogo;
@@ -149,6 +151,13 @@ public class SidebarPanel extends JPanel {
 
         btnVisualizar = new MenuButton("Visualizar Grade", iconSeguro("/icons/visualizar.png"), false);
         add(btnVisualizar);
+
+        add(Box.createVerticalStrut(20));
+        add(secaoLabel("SAIR"));
+        add(Box.createVerticalStrut(4));
+
+        btnLogout = new MenuButton("Logout", new LogoutIcon(), false);
+        add(btnLogout);
     }
 
     private Icon iconSeguro(String path) {
@@ -221,6 +230,13 @@ public class SidebarPanel extends JPanel {
             ativar(btnVisualizar);
             contentPanel.mostrar(ContentPanel.VER_GRADE);
         });
+        btnLogout.addActionListener(e -> {
+            Window parentWindow = SwingUtilities.getWindowAncestor(this);
+            if (parentWindow != null) {
+                parentWindow.dispose();
+            }
+            new LoginScreen();
+        });
     }
 
     private void ativar(MenuButton botao) {
@@ -285,8 +301,37 @@ public class SidebarPanel extends JPanel {
         if (btnTurnos != null) btnTurnos.setMinimizado(minimizado);
         if (btnGerarGrade != null) btnGerarGrade.setMinimizado(minimizado);
         if (btnVisualizar != null) btnVisualizar.setMinimizado(minimizado);
+        if (btnLogout != null) btnLogout.setMinimizado(minimizado);
 
         revalidate();
         repaint();
+    }
+
+    // Ícone de Logout desenhado dinamicamente com traçado vetorial de alta definição
+    private static class LogoutIcon implements Icon {
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(c.getForeground());
+            g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+            // Desenhar o colchete da porta (lado esquerdo)
+            g2.drawLine(x + 11, y + 3, x + 4, y + 3);
+            g2.drawLine(x + 4, y + 3, x + 4, y + 17);
+            g2.drawLine(x + 4, y + 17, x + 11, y + 17);
+
+            // Desenhar a seta saindo da porta para a direita
+            g2.drawLine(x + 7, y + 10, x + 16, y + 10);
+            g2.drawLine(x + 13, y + 7, x + 16, y + 10);
+            g2.drawLine(x + 13, y + 13, x + 16, y + 10);
+
+            g2.dispose();
+        }
+
+        @Override
+        public int getIconWidth() { return 20; }
+        @Override
+        public int getIconHeight() { return 20; }
     }
 }

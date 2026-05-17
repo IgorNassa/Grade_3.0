@@ -22,7 +22,7 @@ import org.flywaydb.core.Flyway;
 
 import javax.swing.SwingUtilities;
 
-public class Main { // Cache refresh
+public class Main {
 
     private static EntityManager em;
 
@@ -41,7 +41,6 @@ public class Main { // Cache refresh
                     .baselineVersion("0")
                     .load();
 
-
             flyway.migrate();
 
             System.out.println("Migrações concluídas com sucesso!");
@@ -54,12 +53,6 @@ public class Main { // Cache refresh
         System.out.println("Conectando ao banco de dados...");
 
         try {
-            java.util.Map<String, String> jpaProps = new java.util.HashMap<>();
-            jpaProps.put("jakarta.persistence.jdbc.url", dbUrl);
-            jpaProps.put("jakarta.persistence.jdbc.user", dbUser);
-            jpaProps.put("jakarta.persistence.jdbc.password", dbPass);
-
-            JPAConfig.init(jpaProps);
             em = JPAConfig.getEntityManager();
 
             DisciplinaRepository disciplinaRepo = new DisciplinaRepositoryImpl(em);
@@ -90,7 +83,8 @@ public class Main { // Cache refresh
             registry.register(AulaService.class, aulaService);
 
             // Register Controllers
-            registry.register(ProfessorController.class, new ProfessorControllerImpl(professorService, disciplinaService));
+            registry.register(ProfessorController.class,
+                    new ProfessorControllerImpl(professorService, disciplinaService));
             registry.register(DisciplinaController.class, new DisciplinaControllerImpl(disciplinaService));
             registry.register(TurnoController.class, new TurnoControllerImpl(turnoService));
             registry.register(TurmaController.class, new TurmaControllerImpl(turmaService));
