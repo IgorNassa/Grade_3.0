@@ -38,7 +38,7 @@ public class DisciplinaView extends JPanel {
         setBackground(AppTheme.BG_CONTENT);
         setBorder(new EmptyBorder(32, 32, 32, 32));
 
-        tableModel = new DefaultTableModel(new String[]{"#", "Nome da Disciplina"}, 0) {
+        tableModel = new DefaultTableModel(new String[]{"ID", "Nome da Disciplina"}, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         tabela = criarTabela();

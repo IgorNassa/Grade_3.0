@@ -36,7 +36,7 @@ public class TurmaView extends JPanel {
         setBackground(AppTheme.BG_CONTENT);
         setBorder(new EmptyBorder(32, 32, 32, 32));
 
-        tableModel = new DefaultTableModel(new String[]{"#", "Nome da Turma", "Tipo"}, 0) {
+        tableModel = new DefaultTableModel(new String[]{"ID", "Nome da Turma", "Tipo"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tabela = criarTabela();
